@@ -1,0 +1,28 @@
+# Original stratigraphic summary of the northern Gulf Coast Aquifer System (after Baker 1979; Kasmarek 2013; Young et al. 2016).
+system: Gulf Coast Aquifer System (northern portion)
+units:
+  - hydrogeologic_unit: Chicot Aquifer
+    formations: [Alluvium (Holocene), Beaumont Formation (Pleistocene), Lissie Formation (Pleistocene), Willis Sand (Pliocene)]
+    lithology: Interbedded sand, clay and gravel; less compacted and more permeable than underlying units.
+    role: aquifer
+    order: 1
+  - hydrogeologic_unit: Evangeline Aquifer
+    formations: [Goliad Sand, upper Fleming Formation (Miocene-Pliocene)]
+    lithology: Alternating fine to medium sand and clay; more compacted and cemented than the Chicot.
+    role: aquifer
+    order: 2
+  - hydrogeologic_unit: Burkeville confining unit
+    formations: [Fleming/Lagarto clays and silts (Miocene)]
+    lithology: Predominantly clay and silt; confining unit between the Evangeline and Jasper aquifers.
+    role: confining
+    order: 3
+  - hydrogeologic_unit: Jasper Aquifer
+    formations: [Lower Lagarto, Oakville Sandstone (Miocene), sandy portions of the Catahoula]
+    lithology: Land-derived sand and clay.
+    role: aquifer
+    order: 4
+  - hydrogeologic_unit: Catahoula confining unit
+    formations: [Catahoula Sandstone (Oligocene-Miocene), Anahuac and Frio formations at depth]
+    lithology: Pyroclastic sand and clay; locally sandy and used for supply.
+    role: confining
+    order: 5

@@ -1,0 +1,6 @@
+{{ g.intro_sentence }} The following parameters were used:
+
+{% for b in g.param_bullets %}- {{ b }}
+{% endfor %}
+
+{{ g.results_sentence_24h }} {{ g.results_sentence_max }} {{ tab.summary }} summarizes the distance-drawdown results, {{ tab.edges }} gives the distance to the outer edge of the cone of depression, {{ g.figures_text }} show the modeled drawdown contours, and {{ tab.impacts }} lists the estimated drawdown at each registered and permitted well within the search radius.

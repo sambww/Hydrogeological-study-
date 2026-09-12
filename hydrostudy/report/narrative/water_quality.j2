@@ -1,0 +1,13 @@
+Water quality in the Gulf Coast Aquifer System varies between the sand intervals that make up each aquifer. Constituents that locally exceed the TCEQ primary maximum contaminant levels (MCLs) or secondary constituent levels (SCLs) in the region include total dissolved solids (TDS), iron, manganese, arsenic and naturally occurring radionuclides (gross alpha activity, combined radium and uranium). Elevated arsenic in Gulf Coast groundwater is associated with volcanic-ash-bearing sediments (Scanlon and others, 2005), and elevated radium is most often reported from deeper, more mineralized sands. The screening levels applied in this section are those of 30 TAC Chapter 290 ({{ wq.limits_version_text }}).
+
+{% if wq.available %}
+{{ wq.records_sentence }} {{ wq.figures_sentence }}
+
+{{ wq.tds_sentence }} {{ wq.fe_sentence }} {{ wq.as_sentence }} {{ wq.radionuclide_sentence }}
+
+{{ wq.representative_sentence }} {{ wq.exceedance_sentence }}
+{% else %}
+[P.G. TO PROVIDE: no water-quality records were supplied for this study; add TCEQ or TWDB sample results for wells completed at similar depths and discuss them here (Guidelines II.B.4).]
+{% endif %}
+
+{% if opinions.water_quality %}{{ opinions.water_quality }}{% else %}[P.G. TO PROVIDE: interpretation of the water-quality data relative to the proposed completion interval and any recommended logging, sampling or treatment considerations.]{% endif %}

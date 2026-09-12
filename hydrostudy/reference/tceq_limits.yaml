@@ -1,0 +1,82 @@
+version: "30 TAC Chapter 290 Subchapter F (primary MCLs) and 290.118 (secondary constituent levels); values as used in 2022-2023 LSGCD submittals"
+verify_on: "2026-09-12"
+note: "Re-verify against current 30 TAC 290 before issuing. Al SCL is a range (0.05-0.2 mg/L); Pb and Cu are action levels, not MCLs."
+constituents:
+  - key: ph
+    label: pH
+    units: s.u.
+    scl_min: 7.0
+  - key: tds
+    label: TDS
+    units: mg/L
+    scl: 1000
+  - key: no3
+    label: Nitrate (as N)
+    units: mg/L
+    mcl: 10
+  - key: no2
+    label: Nitrite (as N)
+    units: mg/L
+    mcl: 1
+  - key: as
+    label: Arsenic
+    units: mg/L
+    mcl: 0.010
+  - key: f
+    label: Fluoride
+    units: mg/L
+    scl: 2.0
+    mcl: 4.0
+  - key: al
+    label: Aluminum
+    units: mg/L
+    scl: 0.2
+  - key: cu
+    label: Copper
+    units: mg/L
+    scl: 1.0
+    action_level: 1.3
+  - key: fe
+    label: Iron
+    units: mg/L
+    scl: 0.3
+  - key: mn
+    label: Manganese
+    units: mg/L
+    scl: 0.05
+  - key: zn
+    label: Zinc
+    units: mg/L
+    scl: 5.0
+  - key: pb
+    label: Lead
+    units: mg/L
+    action_level: 0.015
+  - key: so4
+    label: Sulfate
+    units: mg/L
+    scl: 300
+  - key: cl
+    label: Chloride
+    units: mg/L
+    scl: 300
+  - key: hardness
+    label: Hardness (as CaCO3)
+    units: mg/L
+  - key: gross_alpha
+    label: Gross alpha
+    units: pCi/L
+    mcl: 15
+  - key: gross_beta
+    label: Gross beta
+    units: pCi/L
+    mcl: 50
+    note: "screening level; the MCL is 4 mrem/yr"
+  - key: ra_combined
+    label: Combined radium 226 + 228
+    units: pCi/L
+    mcl: 5
+  - key: uranium
+    label: Uranium
+    units: ug/L
+    mcl: 30

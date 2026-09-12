@@ -1,0 +1,26 @@
+# hydrostudy - draft hydrogeological report generator
+
+Purpose: turn a filled `intake.yaml` plus local public-data extracts into a complete DRAFT hydrogeological report in the
+order of the Lone Star GCD Hydrogeological Report Guidelines (11-11-2022), ready for review and sealing by a Texas P.G. or P.E.
+
+## Run
+```
+python -m venv .venv && .venv/bin/pip install -e .[dev]
+.venv/bin/hydrostudy validate examples/black_oak_well_2
+.venv/bin/hydrostudy run examples/black_oak_well_2        # -> build/report_v1_draft.docx (+ .pdf when libreoffice-writer is installed)
+.venv/bin/pytest
+```
+Use the `/hydro-report` skill (`.claude/skills/hydro-report/SKILL.md`) to walk a new project from intake to report.
+
+## Conventions (do not break)
+- Numbers never get typed into narrative templates or code that writes prose. Every number in the report comes from
+  `build/analysis.json` and friends through `hydrostudy/report/context.py`; `report/lint.py` fails the build otherwise.
+- Units: rates in gpm at the API boundary, T in ft2/day, K in ft/day, distances in feet, time in days. All conversions in `units.py`.
+- Coordinates: WGS84/NAD83 lat/lon in intake; all geometry in a local azimuthal-equidistant CRS in US feet (`geo/crs.py`).
+- Theis superposition per aquifer (`analysis/theis.py`, `analysis/scenarios.py`); wells in other aquifers get "not applicable".
+- Pumped-well drawdown is evaluated at `r_w_ft` (default: borehole radius across the screen). Consultants have used 0.5 and 1.0 ft.
+- Opinions and conclusions live in `review.yaml`; when null the report shows highlighted `[P.G. TO PROVIDE: ...]` placeholders.
+- District rules live in `hydrostudy/districts/*.yaml` with `verified_on`; re-verify before each submittal.
+- Never overwrite a final report: bump `report.revision.number`.
+- The three `examples/` are transcriptions of public submittals and are the regression baseline (`tests/`).
+- No network access is required to run. Live data connectors (Phase 2) are documented in `docs/DATA_SOURCES.md`.

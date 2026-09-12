@@ -1,0 +1,18 @@
+reviewer:
+  name: null
+  license_type: null
+  license_no: null
+  firm: null
+  firm_registration_no: null
+  status: draft
+decisions: {}
+opinions:
+  conclusion: null
+  lithology_basis: "Anticipated lithology interpreted from driller's logs of nearby wells completed to similar or greater depths."
+  recharge_features: null
+  confinement: null
+  water_quality: null
+  aquifer_identification: null
+  parameter_selection: null
+  spacing: null
+notes: []

@@ -1,0 +1,18 @@
+files:
+  district_wells:
+    path: district_wells.csv
+    source: "LSGCD registered and permitted well database export (as tabulated in the May 2023 submittal, Table 1)"
+    retrieved: "2023-04"
+    crs: EPSG:4326
+  water_quality:
+    path: water_quality_samples.csv
+    source: "TCEQ public water system sampling records for Black Oak Well No. 1 (entry point), sample of 2017-02-20"
+    retrieved: "2023-04"
+hydrography_notes:
+  - {name: "Dry Creek", type: stream, within_1_mile: true, source: "USGS National Hydrography Dataset"}
+  - {name: "Spring Creek", type: stream, within_1_mile: true, source: "USGS National Hydrography Dataset"}
+  - {name: "Schweinle Lake", type: pond, within_1_mile: true, source: "USGS National Hydrography Dataset"}
+springs:
+  searched: true
+  source: "TWDB Groundwater Database springs records"
+  found: []

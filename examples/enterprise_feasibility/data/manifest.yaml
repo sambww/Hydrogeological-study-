@@ -1,0 +1,4 @@
+files: {}
+hydrography_notes:
+  - {name: "Neches River", type: river, within_1_mile: true, source: "USGS National Hydrography Dataset"}
+springs: {searched: true, source: "TWDB Groundwater Database springs records", found: []}

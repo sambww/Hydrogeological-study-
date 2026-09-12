@@ -1,0 +1,80 @@
+# Feasibility-study example (non-regulatory), modeled on a 2022 study of two proposed 600-gpm Chicot Aquifer wells
+# in southwestern Orange County. Coordinates are APPROXIMATE placeholders (the source did not publish them).
+schema_version: 1
+mode: feasibility
+report:
+  title: "Hydrogeologic Feasibility Study of Two Proposed Wells - Enterprise Products, Orange County"
+  date: "2022-10-25"
+  issuing_firm: ballard
+  addressee: {name: "Sam Ballard", organization: "Enterprise Products (c/o Ballard Water Well Company)", address_lines: ["Vidor, Texas 77662"]}
+  salutation: "Dear Mr. Ballard:"
+applicant:
+  name: "Enterprise Products"
+  system_name: "Enterprise Products facility"
+district: {id: generic, county: Orange}
+site:
+  description: "southwestern Orange County (parcel 25329)"
+  nearest_boundary_distance_ft: 100
+aquifers:
+  - name: Chicot
+    top_ft_bgl: 0
+    bottom_ft_bgl: 878
+    source: "Gulf Coast Aquifer (northern portion) GAM base of Chicot (Kasmarek, 2013); geophysical log places the base near 870 ft bgl"
+    confinement: {status: semi-confined, confining_unit: "interbedded clays of the upper Chicot", thickness_ft: null}
+    params:
+      t_ft2d: 1917.7
+      s: 4.0e-4
+      k_ftd: 10.1
+      source: {kind: gam, citation: "Gulf Coast Aquifer (northern portion) GAM (Kasmarek, 2013)", model_version: "HAGM (Kasmarek, 2013)"}
+proposed_wells:
+  - id: "1"
+    display_name: "Well No. 1"
+    lat: 30.0210
+    lon: -93.9950
+    aquifer: Chicot
+    max_rate_gpm: 600
+    total_depth_ft: 570
+    static_water_level_ft: 40
+    borehole: [{top_ft: 0, bottom_ft: 570, diameter_in: 17.5}]
+    casing: [{top_ft: -2, bottom_ft: 405, diameter_in: 10.75, material: steel}]
+    screen: [{top_ft: 405, bottom_ft: 570, diameter_in: 10.75, material: "stainless-steel pipe-based", slot_in: 0.016}]
+    cement: [{top_ft: 0, bottom_ft: 380, method: pressure cemented}]
+    filter_pack: [{top_ft: 380, bottom_ft: 570}]
+    anticipated_lithology:
+      - {top_ft: 0, bottom_ft: 255, description: "Sand (upper Chicot)"}
+      - {top_ft: 255, bottom_ft: 405, description: "Clay and sandy clay"}
+      - {top_ft: 405, bottom_ft: 570, description: "Sand (middle Chicot)"}
+    r_w_ft: 1.0
+    nearest_property_boundary_ft: 100
+  - id: "2"
+    display_name: "Well No. 2"
+    lat: 30.0210
+    lon: -93.99478
+    aquifer: Chicot
+    max_rate_gpm: 600
+    total_depth_ft: 570
+    static_water_level_ft: 40
+    borehole: [{top_ft: 0, bottom_ft: 570, diameter_in: 17.5}]
+    casing: [{top_ft: -2, bottom_ft: 405, diameter_in: 10.75, material: steel}]
+    screen: [{top_ft: 405, bottom_ft: 570, diameter_in: 10.75, material: "stainless-steel pipe-based", slot_in: 0.016}]
+    cement: [{top_ft: 0, bottom_ft: 380, method: pressure cemented}]
+    filter_pack: [{top_ft: 380, bottom_ft: 570}]
+    anticipated_lithology:
+      - {top_ft: 0, bottom_ft: 255, description: "Sand (upper Chicot)"}
+      - {top_ft: 255, bottom_ft: 405, description: "Clay and sandy clay"}
+      - {top_ft: 405, bottom_ft: 570, description: "Sand (middle Chicot)"}
+    r_w_ft: 1.0
+    nearest_property_boundary_ft: 100
+existing_wells: []
+permit:
+  annual_volume_gal: 630720000   # 1,200 gpm continuous for one year (feasibility basis)
+analysis:
+  cone_edge_thresholds_ft: [1.0, 5.0]
+  contour_interval_ft: 10
+  scenarios:
+    include_24h: false
+    include_max_production: false
+    fixed_durations_days: [3650, 7300]
+    fixed_duration_labels: ["10 years", "20 years"]
+    include_single_well_subcases: true
+data: {manifest: data/manifest.yaml}

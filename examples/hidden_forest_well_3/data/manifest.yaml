@@ -1,0 +1,11 @@
+files:
+  district_wells:
+    path: district_wells.csv
+    source: "LSGCD registered well list within 1 mile (as tabulated in the May 2022 submittal, Table 2; depth and screen not provided by the District)"
+    retrieved: "2022-05"
+  water_quality:
+    path: water_quality_samples.csv
+    source: "TCEQ sampling records, Hidden Forest Well No. 2 entry point (2017 radionuclides; 2019 chemistry)"
+    retrieved: "2022-05"
+hydrography_notes: []
+springs: {searched: true, source: "TWDB Groundwater Database springs records", found: []}

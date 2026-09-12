@@ -1,0 +1,34 @@
+registration_no,permit_no,owner,address,city,total_depth_ft,screen_intervals,aquifer,status,lat,lon
+2009042803,,"Aqua Texas, Inc. (Hidden Forest)",15851 Forest St.,Montgomery,415,375-415,Jasper,Operating,30.47688325,-95.67760169
+2009121101,,Scheel,19461 Lake Mt Pleasant,Montgomery,,,,Operating,30.46527777,-95.66361111
+2005031835,,Hogan,20234 South Shore,Montgomery,,,,Operating,30.46805556,-95.6725
+2006082404,,Caldwell,20295 S. Shore Dr,Montgomery,,,,Operating,30.4679132,-95.6714789
+2011090802,,Morris,20175 N. Shore Drive,Montgomery,,,,Operating,30.47194444,-95.67083333
+2009041402,,Porterly,19973 North Shore Dr.,Montgomery,,,,Operating,30.47166634,-95.66750336
+2005031826,,Guillory,20390 Northshore Drive,Montgomery,,,,Operating,30.47138889,-95.67333333
+2010062302,,Morgan,21066 South Shore Drive,Montgomery,,,,Operating,30.46805573,-95.67166901
+2012120602,,Stone,20202 South Shore Dr,Montgomery,,,,Operating,30.46833333,-95.67222222
+2011062002,,Meeler,20187 S. Shore Drive,Montgomery,,,,Operating,30.47888889,-95.67055556
+2011060903,,Williamson,20007 North Shore,Montgomery,,,,Operating,30.47194444,-95.675
+2006042704,,Caldwell,20299 S. Shore Dr,Montgomery,,,,Operating,30.46805573,-95.66583252
+2005031646,,Lowery,20115 Northshore,Montgomery,,,,Operating,30.47111111,-95.67055556
+2014060901,,Hilton,15250 Renee Ln,Montgomery,,,,Operating,30.46777778,-95.66833333
+2014060902,,Hilton,19994 South Shore Dr,Montgomery,,,,Operating,30.46777778,-95.66944444
+2014070106,,Davis,3450 Spring Branch Rd,Montgomery,,,,Operating,30.46777778,-95.66944444
+2015022702,,Nunn,20455 North Shore,Montgomery,,,,Operating,30.46972222,-95.67138889
+2016070602,,Foster,20320 N. Shore Drive,Montgomery,,,,Operating,30.47138888,-95.67361111
+2017042002,,Phillips,20498 North Shore,Montgomery,,,,Operating,30.47083333,-95.67361111
+2017101903,,Harpold,19980 N. Shore Dr.,Montgomery,,,,Operating,30.47194444,-95.66805555
+2018012904,,Fennell,20127 North Shore,Montgomery,,,,Operating,30.47055555,-95.66944444
+2018020101,,Tindall,20463 Northshore Dr.,Montgomery,,,,Operating,30.46888888,-95.67111111
+2019011802,,Lyons,19916 South Shore Drive,Montgomery,,,,Operating,30.46777777,-95.66805555
+2004072939,,"Aqua Texas, Inc. (Hidden Forest)",15851 Forest St.,Montgomery,,,,Plugged,30.4769444,-95.67759723
+2004080227,,Scheel,19461 Mt. Pleasant Rd.,Montgomery,,,,Not Operating,30.46423271,-95.66355053
+2004080228,,Scheel,19461 Mt. Pleasant Rd.,Montgomery,,,,Capped,30.46416666,-95.66361111
+2010040703,,Morgan,20166 Southshore Dr,Montgomery,,,,Void - Application Withdrawn,30.46777725,-95.67111206
+2011062818,,Fennell,20127 North Shore,Montgomery,,,,Plugged,30.47138888,-95.67083333
+2012061402,,Vaughn,20435 North Shore Dr.,Montgomery,,,,Void - Application Withdrawn,30.47138889,-95.67305556
+2012080304,,Vaughn,20435 North Shore Dr,Montgomery,,,,Void - Application Withdrawn,30.47166667,-95.67277778
+2012080706,,Vaughn,20435 North Shore Dr,Montgomery,,,,Void - Application Withdrawn,30.47166667,-95.67305556
+2006042602,,Caldwell,20295 South Shore,Montgomery,,,,Plugged,30.4679132,-95.6714789
+2021041302,,Williams,20158 North Shore Dr,Montgomery,,,,Being drilled,30.4725,-95.67055555

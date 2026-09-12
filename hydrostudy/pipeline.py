@@ -1,0 +1,139 @@
+"""Stage runner: intake + local data -> build/*.json -> figures -> report."""
+
+from __future__ import annotations
+
+import json
+import time
+from dataclasses import asdict, is_dataclass
+from pathlib import Path
+
+from hydrostudy import __version__
+from hydrostudy.analysis.aquifer_params import resolve_params
+from hydrostudy.analysis.checks import collect_flags
+from hydrostudy.analysis.interference import pumping_level_checks, system_interference_matrix
+from hydrostudy.analysis.scenarios import build_scenarios, run_scenario
+from hydrostudy.analysis.spacing import spacing_analysis
+from hydrostudy.data.hydrography import build_hydrography
+from hydrostudy.data.manifest import load_manifest
+from hydrostudy.data.water_quality import build_water_quality
+from hydrostudy.data.wells import build_nearby_wells
+from hydrostudy.districts.loader import load_district
+from hydrostudy.geo.crs import LocalCRS
+from hydrostudy.schema.loaders import load_intake, load_review
+from hydrostudy.units import FT_PER_MILE
+
+
+def _json_default(o):
+    if is_dataclass(o):
+        return asdict(o)
+    if hasattr(o, "tolist"):
+        return o.tolist()
+    if isinstance(o, Path):
+        return str(o)
+    return str(o)
+
+
+def dump_json(obj, path: Path):
+    path.parent.mkdir(parents=True, exist_ok=True)
+    with open(path, "w", encoding="utf-8") as f:
+        json.dump(obj, f, indent=2, default=_json_default)
+
+
+class Project:
+    def __init__(self, project_dir: str | Path):
+        self.dir = Path(project_dir).resolve()
+        self.build_dir = self.dir / "build"
+        self.intake = load_intake(self.dir / "intake.yaml")
+        self.review = load_review(self.dir / "review.yaml")
+        self.district = load_district(self.intake.district.id)
+        self.manifest = load_manifest(self.dir, self.intake.data.manifest)
+        # local CRS centered on the first proposed well
+        pw = self.intake.proposed_wells[0]
+        self.crs = LocalCRS(pw.lat, pw.lon)
+        self.intake._local_xy = {w.id: tuple(map(float, self.crs.to_local(w.lon, w.lat))) for w in self.intake.all_wells}
+        self.artifacts: dict = {}
+
+    # ---------------- stages ----------------
+    def run_analysis(self) -> dict:
+        intake, district, review = self.intake, self.district, self.review
+        t0 = time.time()
+        aquifer_params = resolve_params(intake, review)
+
+        # search radius = max(1/2 mile, largest required spacing radius among proposed wells)
+        spacing_radii = [district.required_spacing_ft(w.aquifer, w.max_rate_gpm) or 0 for w in intake.proposed_wells]
+        spacing_radius_ft = max(spacing_radii) if spacing_radii else 0.0
+        half_mile = float(district.get("search_radius", {}).get("half_mile_ft", 2640))
+        search_radius_ft = max(half_mile, spacing_radius_ft)
+
+        nearby = build_nearby_wells(intake, district, self.crs, self.manifest, search_radius_ft, spacing_radius_ft)
+        spacing = spacing_analysis(intake, district, nearby)
+        wq = build_water_quality(self.manifest)
+        site_xy = intake._local_xy[intake.proposed_wells[0].id]
+        hydro = build_hydrography(self.manifest, self.crs, site_xy, float(district.get("surface_water_radius_mi", 1.0)))
+        hydro_geoms = hydro.pop("_geoms")
+
+        scen_defs = build_scenarios(intake, review, aquifer_params)
+        scenarios = [run_scenario(sc, intake, review, aquifer_params, nearby) for sc in scen_defs]
+        interference = {sc["key"]: system_interference_matrix(sc) for sc in scenarios if sc["group"] == "system"}
+        pumping = pumping_level_checks(intake, scenarios)
+        flags = collect_flags(intake, review, aquifer_params, spacing, scenarios, pumping, hydro, wq, district["id"])
+
+        geo = {
+            "crs_proj4": self.crs.proj4, "origin": {"lat": self.crs.lat0, "lon": self.crs.lon0},
+            "wells_xy": intake._local_xy,
+            "search_radius_ft": search_radius_ft, "spacing_radius_ft": spacing_radius_ft,
+            "half_mile_ft": half_mile, "map_radius_ft": float(district.get("wells_map_radius_mi", 1.0)) * FT_PER_MILE,
+        }
+        provenance = {
+            "hydrostudy_version": __version__, "generated_at": time.strftime("%Y-%m-%d %H:%M:%S"),
+            "project_dir": str(self.dir), "intake": "intake.yaml", "review": "review.yaml",
+            "district_rules": {"id": district["id"], "version": district["rules"].get("version"),
+                               "verified_on": district["rules"].get("verified_on"),
+                               "verified_by": district["rules"].get("verified_by")},
+            "files": [f.provenance() for f in self.manifest.files.values()],
+            "tceq_limits": {"version": wq["limits_version"], "verify_on": wq["limits_verify_on"]},
+        }
+        analysis = {
+            "aquifer_params": aquifer_params, "scenarios": scenarios, "system_interference": interference,
+            "pumping_levels": pumping, "spacing": spacing,
+            "wells": [{"id": w.id, "kind": "proposed" if w in intake.proposed_wells else "existing",
+                       "aquifer": w.aquifer, "q_gpm": w.max_rate_gpm, "r_w_ft": w.effective_r_w_ft(),
+                       "x_ft": intake._local_xy[w.id][0], "y_ft": intake._local_xy[w.id][1],
+                       "lat": w.lat, "lon": w.lon,
+                       "in_system": True if w in intake.proposed_wells else w.include_in_system} for w in intake.all_wells],
+            "elapsed_s": time.time() - t0,
+        }
+        self.artifacts = {"geo": geo, "nearby_wells": nearby, "water_quality": wq, "hydrography": hydro,
+                          "analysis": analysis, "flags": flags, "provenance": provenance,
+                          "_hydro_geoms": hydro_geoms}
+        for k, v in self.artifacts.items():
+            if k.startswith("_"):
+                continue
+            if k == "water_quality":
+                v = {kk: vv for kk, vv in v.items() if kk != "limits"} | {"limits": v["limits"]}
+            dump_json(v, self.build_dir / f"{k}.json")
+        return self.artifacts
+
+    def run_figures(self):
+        from hydrostudy.figures import render_all
+        self.artifacts["figures"] = render_all(self)
+        dump_json(self.artifacts["figures"], self.build_dir / "figures.json")
+        return self.artifacts["figures"]
+
+    def run_report(self, pdf: bool = True):
+        from hydrostudy.report.assemble import build_report
+        result = build_report(self, pdf=pdf)
+        dump_json(result, self.build_dir / "report.json")
+        return result
+
+    def run_checklist(self):
+        from hydrostudy.qa.checklist import build_checklist
+        cl = build_checklist(self)
+        dump_json(cl, self.build_dir / "checklist.json")
+        return cl
+
+    def run_all(self, pdf: bool = True):
+        self.run_analysis()
+        self.run_figures()
+        self.run_checklist()
+        return self.run_report(pdf=pdf)

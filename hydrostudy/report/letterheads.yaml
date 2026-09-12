@@ -1,0 +1,12 @@
+ballard:
+  firm: "Ballard Water Well Company, LLC"
+  lines:
+    - "Conroe / The Woodlands, Texas"
+    - "www.texaswaterwell.com  |  info@texaswaterwell.com  |  832.479.3557"
+  registration_line: "TBPG/TBPE Firm Registration No. [CONFIRM WITH SEALING PROFESSIONAL]"
+generic:
+  firm: "[ISSUING FIRM NAME]"
+  lines:
+    - "[Street address, City, Texas ZIP]"
+    - "[Phone]  |  [Web]"
+  registration_line: "TBPG Firm Registration No. [____]"

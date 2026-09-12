@@ -1,0 +1,9 @@
+{{ fig.wells }} shows the District registered and permitted wells within {{ radii.map_radius_text }} of the proposed well together with mapped surface-water features, and {{ fig.property }} shows the proposed well relative to the property and the required spacing radius. {{ tab.nearby }} lists the {{ nearby.count_in_search }} wells identified within the {{ radii.search_radius_text }} search radius, which is the greater of one-half mile and the required spacing radius; the Map ID numbers in the table correspond to the labels on the figures. {{ hydrography.springs_sentence }}
+
+{% for w in spacing.wells %}
+{{ w.rule_sentence }} {{ w.result_sentence }}{% if w.same_system_sentence %} {{ w.same_system_sentence }}{% endif %}
+{% endfor %}
+{% if spacing.exception_requested %}
+The Applicant is requesting an exception to the spacing requirement. [REVIEWER TO PROVIDE: supporting documentation of impacts at the proposed spacing, per Guidelines II.B.1.]
+{% endif %}
+{% if opinions.spacing %}{{ opinions.spacing }}{% endif %}

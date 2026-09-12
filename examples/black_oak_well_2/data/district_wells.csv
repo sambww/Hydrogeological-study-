@@ -1,0 +1,16 @@
+registration_no,permit_no,owner,address,city,total_depth_ft,screen_intervals,aquifer,status,lat,lon
+2016092601,OP-16092601,"Aqua Texas, Inc. (Black Oak)",7899 Black Oak Dr,Magnolia,655,600-655,Evangeline,Operating,30.170000,-95.578056
+2016011402,OP-16011402B,"RS Investments, LLC (Maximum Athletics)",28519 Sweetgum Rd,Magnolia,,,,Plugged,30.174722,-95.573333
+2016011403,OP-16011402B,"RS Investments, LLC (Maximum Athletics)",28519 Sweetgum Pl,Magnolia,290,245-290,Evangeline,Operating,30.174444,-95.572778
+2014120501,Exempt,Macias,28215 Sweet Gum Rd.,Magnolia,230,215-230,Evangeline,Operating,30.1675,-95.573611
+2014061802,Exempt,Cannon,7518 Red Bay Circle,Magnolia,300,280-300,Evangeline,Operating,30.1725,-95.571389
+2008111802,Exempt,Gaskill,28611 Blue Jack Lane,Magnolia,244,232-242,Evangeline,Operating,30.176111,-95.576389
+2008012301,Exempt,Leslie,27907 Dry Creek Rd.,Magnolia,200,190-200,Evangeline,Operating,30.165565,-95.582936
+2012092101,Exempt,Putnam,28607 Black Jack,Magnolia,240,220-240,Evangeline,Capped,30.175556,-95.575833
+2006111401,Exempt,Lilly,7816 Black Oak Dr.,Magnolia,240,225-240,Evangeline,Operating,30.171944,-95.575556
+2008061202,Exempt,Phillips,28515 Blue Jack Rd.,Magnolia,317,307-317,Evangeline,Operating,30.174444,-95.576111
+2012091003,Exempt,Smith,7818 Red Bay Circle,Magnolia,230,210-230,Evangeline,Operating,30.176389,-95.575
+2012092802,Exempt,Putnam,28518 Blue Jack,Magnolia,240,220-240,Evangeline,Operating,30.174444,-95.575
+2011102405,OP03-0050R,San Jacinto River Authority (Well 39),11482 West Branch Crossing,The Woodlands,1649,"1257-1277; 1282-1297; 1325-1332; 1342-1364; 1375-1382; 1388-1427; 1451-1457; 1481-1533; 1538-1552; 1562-1568; 1594-1598; 1607-1629",Jasper,Operating,30.173611,-95.583889
+2011120602,AWS-11120601,San Jacinto River Authority (AWS Test Bore),650 feet South of South French Oaks Circle,The Woodlands,,,,Test Bore - Not Completed,30.173333,-95.583611
+2011121401,OP-11121401,Weisinger Incorporated (Supply Well SJRA),West Branch Crossing,The Woodlands,,,,Plugged,30.173889,-95.584167

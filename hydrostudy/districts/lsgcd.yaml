@@ -1,0 +1,124 @@
+id: lsgcd
+name: Lone Star Groundwater Conservation District
+short_name: LSGCD
+county: Montgomery
+addressee:
+  name: General Manager
+  organization: Lone Star Groundwater Conservation District
+  address_lines:
+    - 655 Conroe Park North Drive
+    - Conroe, Texas 77303
+  note: Confirm the current General Manager's name before issuing.
+rules:
+  version: "Rules as amended; Hydrogeological Report Guidelines adopted 11-11-2022 (Rules 2.6(b)(15), 2.12, 3.4)"
+  verified_on: "2026-09-12"
+  verified_by: "hydrostudy setup (from the 11-11-2022 guideline PDF and 2023 consultant reports); re-verify against current LSGCD Rules before each submittal"
+report_threshold_gpm: 700          # system aggregate capacity from the same District aquifer
+threshold_note: "A hydrogeological report is required for a new well or well system with aggregate capacity of 700 gpm or greater, for increases of existing wells to 700 gpm or greater, and for spacing exceptions (Guidelines I.B)."
+spacing:
+  rule_reference: "LSGCD Rule 3.3 (verify current multipliers)"
+  well_to_well:
+    - aquifers: [Chicot, Evangeline]
+      ft_per_gpm: 2.0
+    - aquifers: [Jasper]
+      ft_per_gpm: 1.5
+    - aquifers: [Catahoula]
+      ft_per_gpm: 1.0
+  same_system_wells: flag           # wells of the applicant's own system inside the radius are flagged, not counted as conflicts
+  property_line_setback_ft: null
+search_radius:
+  half_mile_ft: 2640
+  rule: max_with_spacing            # table radius = max(1/2 mile, required spacing radius)
+wells_map_radius_mi: 1.0
+surface_water_radius_mi: 1.0
+scenarios: [24h, max_production]
+include_statuses: [Operating, Capped, Plugged, "Not Operating", "Being drilled", "Test Bore - Not Completed", Unknown]
+gam:
+  cited_in_guidelines: "TWDB Houston Area Groundwater Model (HAGM; Kasmarek 2013)"
+  current_adopted: "Northern portion of the Gulf Coast Aquifer System GAM v4.1 (adopted by GMA 14, January 2026)"
+  note: "Confirm with District staff which model version they accept for parameter selection."
+checklist:
+  - id: II.B.1
+    text: Confirm well spacing complies with the Rules or request an exception with supporting impacts.
+    evidence: [spacing]
+    auto: true
+  - id: II.B.2(a)
+    text: Schematic well construction diagram (screen intervals/diameter, filter pack, casing diameter/setting, cement/seals).
+    evidence: [figure_schematic, table_construction]
+    auto: true
+  - id: II.B.2(b)
+    text: Lithologic description of geology anticipated during drilling.
+    evidence: [lithology]
+    auto: false
+    professional: Anticipated lithology is interpreted from nearby logs and must be confirmed by the reviewer.
+  - id: II.B.2(c)
+    text: Maps showing property relative to county line and well relative to property boundaries and other features.
+    evidence: [figure_location, figure_property]
+    auto: true
+  - id: II.B.3(a)
+    text: Identification of aquifer (work with District staff).
+    evidence: [aquifer_id]
+    auto: false
+    professional: Aquifer identification must be confirmed with District staff.
+  - id: II.B.3(b)
+    text: Surface and subsurface geology including recharge features (outcrop, surface water, faults).
+    evidence: [general_hydrogeology, recharge_features]
+    auto: false
+    professional: Recharge features and surface geology unit at the site require reviewer confirmation.
+  - id: II.B.3(c)
+    text: Depth interval of water-bearing zone, target production zone and anticipated screen intervals.
+    evidence: [aquifer_depths, table_construction]
+    auto: true
+  - id: II.B.3(d)
+    text: Anticipated thickness of water-bearing zone and well screens.
+    evidence: [aquifer_depths]
+    auto: true
+  - id: II.B.3(e)
+    text: Whether the target zone is confined or unconfined.
+    evidence: [confinement]
+    auto: false
+    professional: Confinement status requires reviewer confirmation.
+  - id: II.B.3(f)
+    text: Estimated thickness of the confining layer at the site, if applicable.
+    evidence: [confinement]
+    auto: false
+  - id: II.B.3(g)
+    text: Aquifer parameters (T, K, S) from the TWDB GAM or site-specific data, tabulated per well location.
+    evidence: [table_parameters]
+    auto: true
+  - id: II.B.3(h)
+    text: All District registered and permitted wells within the greater of 1/2 mile or the spacing radius.
+    evidence: [table_nearby_wells, figure_wells]
+    auto: true
+  - id: II.B.3(i)
+    text: Streams or springs within a 1-mile radius.
+    evidence: [hydrography]
+    auto: true
+  - id: II.B.4(a)
+    text: Known water quality in the area from literature and well reports.
+    evidence: [water_quality]
+    auto: true
+  - id: II.B.5(a)(i)
+    text: 24-hour and maximum-production simulations at maximum pumping capacity for the proposed well and the system.
+    evidence: [scenarios]
+    auto: true
+  - id: II.B.5(a)(ii)
+    text: Simulation results showing drawdown at 24 hours and the maximum production scenario.
+    evidence: [table_drawdown_summary]
+    auto: true
+  - id: II.B.5(a)(iii)
+    text: Methodology, software, assumptions and solution method.
+    evidence: [methodology]
+    auto: true
+  - id: II.B.5(a)(iv)
+    text: Cone-of-depression maps for the proposed well only and for all wells in the system.
+    evidence: [figure_drawdown_well, figure_drawdown_system]
+    auto: true
+  - id: II.B.5(b)
+    text: Interference that each system well may exert on other system wells.
+    evidence: [system_interference]
+    auto: true
+  - id: II.B.5(c)
+    text: Tabulated 24-hour and maximum-production impacts on registered/permitted wells within the search radius.
+    evidence: [table_impacts_well, table_impacts_system]
+    auto: true

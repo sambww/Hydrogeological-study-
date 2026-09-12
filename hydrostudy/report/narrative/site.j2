@@ -1,0 +1,9 @@
+{% for a in aquifers %}
+{{ a.depth_sentence }} {{ a.thickness_sentence }} {{ a.confinement_sentence }}
+
+{{ a.params_sentence }} {{ a.derivation_sentence }} {{ tab.parameters }} lists the values adopted for the simulations. {% if a.gam_note %}{{ a.gam_note }}{% endif %}
+{% endfor %}
+
+{{ nearby.usage_sentence }} {{ hydrography.streams_sentence }}
+
+{% if opinions.aquifer_identification %}{{ opinions.aquifer_identification }}{% else %}[P.G. TO PROVIDE: confirmation of the aquifer identification with District staff (Guidelines II.B.3(a)).]{% endif %} {% if opinions.recharge_features %}{{ opinions.recharge_features }}{% else %}[P.G. TO PROVIDE: statement on surface geology at the site and on any significant recharge features such as outcrop, surface-water bodies or faults within the study area (Guidelines II.B.3(b)).]{% endif %} {% if opinions.confinement %}{{ opinions.confinement }}{% endif %} {% if opinions.parameter_selection %}{{ opinions.parameter_selection }}{% endif %}

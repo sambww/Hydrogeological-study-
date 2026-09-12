@@ -1,0 +1,103 @@
+# Example transcribed from a public LSGCD submittal (Black Oak Water System Well No. 2, Aqua Texas, Inc., May 2023)
+# so the pipeline can be regression-tested against a District-accepted report.
+schema_version: 1
+mode: lsgcd_pre_drilling
+report:
+  title: "Lone Star Groundwater Conservation District Hydrogeological Report - Black Oak Water System Well No. 2"
+  date: "2023-05-01"
+  revision: {number: 1, reason: null}
+  issuing_firm: generic
+applicant:
+  name: "Aqua Texas, Inc."
+  pws_name: "Black Oak Water System"
+  pws_id: "TX 1700851"
+  system_name: "Black Oak Water System"
+district:
+  id: lsgcd
+  county: Montgomery
+  rules_version: "Guidelines 11-11-2022"
+  verified_on: "2023-05-01"
+site:
+  address: "Black Oak Dr., Magnolia, Texas"
+  description: "southern Montgomery County"
+  nearest_boundary_distance_ft: 25
+  boundary_distance_source: "property map"
+aquifers:
+  - name: Evangeline
+    top_ft_bgl: 260
+    bottom_ft_bgl: 944
+    source: "Gulf Coast Aquifer (northern portion) GAM layer surfaces (Kasmarek, 2013)"
+    confinement: {status: confined, confining_unit: "Chicot clays / upper Fleming clays", thickness_ft: null, source: null}
+    params:
+      t_ft2d: 1023
+      s: 3.36e-4
+      k_ftd: 1.5
+      source:
+        kind: site_test
+        citation: "Transmissivity from 36-hour aquifer test of Black Oak Well No. 1 (TDLR tracking no. 442731) in lieu of the GAM value of 1,231.2 ft2/day; storativity from the GAM (Kasmarek, 2013)"
+        model_version: "HAGM (Kasmarek, 2013)"
+        notes: "GAM values at the site: T = 1,231.2 ft2/day, K = 1.2 ft/day, S = 3.36 x 10^-4"
+    site_test:
+      well_ref: W1
+      q_gpm: 270
+      duration_hr: 36
+      swl_ft: 364
+      pwl_ft: 434.9
+      r_w_ft: 0.5
+      tracking_no: "442731"
+proposed_wells:
+  - id: W2
+    display_name: "Well No. 2"
+    lat: "30° 10' 12.60\" N"
+    lon: "95° 34' 41.15\" W"
+    elevation_ft_msl: 166
+    elevation_source: "topographic map"
+    aquifer: Evangeline
+    max_rate_gpm: 385
+    total_depth_ft: 780
+    static_water_level_ft: 350
+    swl_source: "nearby Well No. 1 (364 ft bgl in 2017), rounded"
+    borehole:
+      - {top_ft: 0, bottom_ft: 700, diameter_in: 11.875}
+      - {top_ft: 700, bottom_ft: 780, diameter_in: 7.875}
+    casing:
+      - {top_ft: -2, bottom_ft: 700, diameter_in: 8.625, wall_in: 0.322, material: steel}
+    screen:
+      - {top_ft: 700, bottom_ft: 780, diameter_in: 6.625, material: steel, slot_in: null}
+    cement:
+      - {top_ft: 0, bottom_ft: 700, method: pressure cemented}
+    packer_depth_ft: 700
+    anticipated_lithology:
+      - {top_ft: 0, bottom_ft: 220, description: Sandy clay}
+      - {top_ft: 220, bottom_ft: 310, description: Sand}
+      - {top_ft: 310, bottom_ft: 360, description: Clay}
+      - {top_ft: 360, bottom_ft: 400, description: Sandy clay}
+      - {top_ft: 400, bottom_ft: 600, description: Sand}
+      - {top_ft: 600, bottom_ft: 660, description: Sandy clay}
+      - {top_ft: 660, bottom_ft: 780, description: Sand}
+    r_w_ft: 0.5   # pumped-well evaluation radius (borehole radius across the screened interval)
+    nearest_property_boundary_ft: 25
+existing_wells:
+  - id: W1
+    display_name: "Well No. 1"
+    registration_no: "2016092601"
+    permit_no: "OP-16092601"
+    lat: 30.170000
+    lon: -95.578056
+    aquifer: Evangeline
+    max_rate_gpm: 350
+    total_depth_ft: 655
+    screen:
+      - {top_ft: 600, bottom_ft: 655, diameter_in: 6.0, material: steel}
+    status: Operating
+    include_in_system: true
+    r_w_ft: 0.5
+    nearest_property_boundary_ft: 50
+permit:
+  annual_volume_gal: 29000000
+analysis:
+  cone_edge_thresholds_ft: [1.0, 5.0]
+  contour_interval_ft: 5
+  map_radius_mi: 1.0
+data:
+  manifest: data/manifest.yaml

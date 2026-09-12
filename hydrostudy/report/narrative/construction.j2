@@ -1,0 +1,7 @@
+{{ tab.construction }} summarizes the anticipated construction of the proposed well{{ proposed.plural }}, and {{ fig.schematics }} present{{ proposed.singular_s }} the well profile{{ proposed.plural }} with the lithology anticipated during drilling.
+{% for w in proposed.wells %}
+
+{{ w.construction_sentence }} {{ w.target_sentence }}
+{% endfor %}
+
+{% if opinions.lithology_basis %}{{ opinions.lithology_basis }}{% else %}[P.G. TO PROVIDE: basis for the anticipated lithology (nearby driller's logs, geophysical logs or GAM layer surfaces reviewed).]{% endif %}

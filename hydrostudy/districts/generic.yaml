@@ -1,0 +1,31 @@
+id: generic
+name: Generic groundwater conservation district
+short_name: GCD
+county: null
+addressee:
+  name: General Manager
+  organization: null
+  address_lines: []
+rules:
+  version: null
+  verified_on: null
+  verified_by: null
+report_threshold_gpm: null
+threshold_note: "District requirements not configured; confirm report triggers with the District."
+spacing:
+  rule_reference: null
+  well_to_well: []
+  same_system_wells: flag
+  property_line_setback_ft: null
+search_radius:
+  half_mile_ft: 2640
+  rule: max_with_spacing
+wells_map_radius_mi: 1.0
+surface_water_radius_mi: 1.0
+scenarios: [24h, max_production]
+include_statuses: []
+gam:
+  cited_in_guidelines: null
+  current_adopted: "Northern portion of the Gulf Coast Aquifer System GAM v4.1"
+  note: "Confirm with District staff."
+checklist: []
