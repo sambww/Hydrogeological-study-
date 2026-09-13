@@ -9,6 +9,7 @@ python -m venv .venv && .venv/bin/pip install -e .[dev]
 .venv/bin/hydrostudy validate examples/black_oak_well_2
 .venv/bin/hydrostudy run examples/black_oak_well_2        # -> build/report_v1_draft.docx (+ .pdf when libreoffice-writer is installed)
 .venv/bin/pytest
+.venv/bin/hydrostudy doctor --network                     # environment + data-host reachability
 ```
 Use the `/hydro-report` skill (`.claude/skills/hydro-report/SKILL.md`) to walk a new project from intake to report.
 

@@ -15,6 +15,7 @@ You are helping a water-well contractor produce a DRAFT hydrogeological report t
 - Do not write conclusions or opinions; those belong to the reviewer in `review.yaml`.
 
 ## Steps
+0. If this is a new machine or something fails to import, run `hydrostudy doctor --network` and follow `docs/RUNBOOK.md`.
 1. **Intake interview** (ask only for what is missing; the user is an experienced driller):
    applicant / PWS name and ID / county and district; each proposed well (coordinates, elevation, aquifer, max gpm,
    total depth, borehole-casing-screen-cement-filter pack intervals, packer, static water level, anticipated

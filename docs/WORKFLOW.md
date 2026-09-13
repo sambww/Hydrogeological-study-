@@ -1,5 +1,7 @@
 # Workflow: from a well proposal to a sealed report
 
+First time on a machine: follow `docs/RUNBOOK.md` section A (setup and `hydrostudy doctor`).
+
 1. **Scaffold** `hydrostudy new projects/<slug>` (copies the example intake, review and manifest).
 2. **Fill `intake.yaml`** (driller's inputs):
    - applicant, PWS name and ID, county, district (`lsgcd` or `generic`)
