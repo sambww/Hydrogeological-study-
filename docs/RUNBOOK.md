@@ -32,9 +32,10 @@ those steps are the first real test. Report failures as described in each step.
 
 Run against the Black Oak example so results can be judged against known values.
 
-1. Find the Montgomery County parcel layer URL: open the county open-data portal (data-moco.opendata.arcgis.com),
-   search "MCAD Tax Parcel View", open the dataset, and copy the FeatureServer layer URL from its API / "I want to use
-   this" panel (it ends in `/FeatureServer/0`).
+1. Find the Montgomery County parcel layer URL: open the county's ArcGIS Hub open-data site (search "Montgomery County
+   Texas open data" or "MCAD tax parcels" if the address has changed), open the tax-parcel dataset, and copy the
+   FeatureServer layer URL from its API panel. It ends in `/FeatureServer/0`. Any county's parcel FeatureServer works
+   the same way; only this URL changes between counties.
 2. Run the fetch script (the TWDB archives are several hundred MB; add `--skip-twdb` the first time if bandwidth is limited):
    ```
    .venv/bin/python scripts/fetch_public_data.py examples/black_oak_well_2 --parcels-layer "<layer URL>"
@@ -67,16 +68,18 @@ parameter maps the consultants include.
    ```
    # MODFLOW 6 (GAM v4.x)
    .venv/bin/python scripts/build_gam_lookup.py --engine mf6 --model-dir /path/to/gam_v41 \
-       --lat 30.170167 --lon -95.578097 --layers "Chicot,Evangeline,Burkeville,Jasper" \
+       --lat 30.170167 --lon -95.578097 --ground-elev-ft 166 --layers "Chicot,Evangeline,Burkeville,Jasper" \
        --model-name "Northern Gulf Coast GAM" --version v4.1 --out examples/black_oak_well_2/data/gam_lookup.json
 
    # MODFLOW-2000 (HAGM); supply the grid georeference if the name file lacks it
    .venv/bin/python scripts/build_gam_lookup.py --engine mf2k --model-dir /path/to/hagm --name-file hagm.nam \
        --epsg 32139 --xoff <x> --yoff <y> --angrot <deg> \
-       --lat 30.170167 --lon -95.578097 --layers "Chicot,Evangeline,Burkeville,Jasper" \
+       --lat 30.170167 --lon -95.578097 --ground-elev-ft 166 --layers "Chicot,Evangeline,Burkeville,Jasper" \
        --model-name "Houston Area Groundwater Model" --version "v1.1" --out examples/black_oak_well_2/data/gam_lookup.json
    ```
    The HAGM grid is 137 rows by 245 columns of 1-mile cells; the model documentation states its projection and origin.
+   `--ground-elev-ft` is the datum the layer depths are measured from (166 ft MSL is the Black Oak ground elevation);
+   leave it off for a real project only if you want depths measured from the model's own land surface at that cell.
 3. Acceptance check (HAGM, Evangeline layer at the Black Oak site, values the 2023 consultant report read from the same
    model): transmissivity about 1,231 ft2/day, hydraulic conductivity about 1.2 ft/day, storativity 3.36e-4, top about
    260 ft bgl, base about 944 ft bgl. Values within roughly 10 percent confirm the grid georeference and unit handling;
