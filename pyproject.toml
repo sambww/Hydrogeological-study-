@@ -23,6 +23,7 @@ dependencies = [
 [project.optional-dependencies]
 dev = ["pytest>=7", "ruff>=0.4", "pymupdf>=1.24"]
 connectors = ["requests>=2.31"]
+gam = ["flopy>=3.5"]
 
 [project.scripts]
 hydrostudy = "hydrostudy.cli:main"

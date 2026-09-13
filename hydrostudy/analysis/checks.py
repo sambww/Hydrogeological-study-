@@ -10,6 +10,8 @@ def collect_flags(intake, review, aquifer_params, spacing, scenarios, pumping_le
         flags.append({"level": level, "code": code, "text": text})
 
     for aq, p in aquifer_params.items():
+        if p.get("gam_mismatch"):
+            add("review", "GAM_MISMATCH", f"{aq}: {p['gam_note']}.")
         if p["k_derived"]:
             add("info", "K_DERIVED", f"{aq}: hydraulic conductivity derived as T/b = {p['k_ftd']:.2f} ft/day.")
         if p["top_ft_bgl"] is None or p["bottom_ft_bgl"] is None:

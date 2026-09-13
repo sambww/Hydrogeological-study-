@@ -77,7 +77,7 @@ class SiteTest(BaseModel):
 
 class AquiferParams(BaseModel):
     t_ft2d: float | None = Field(default=None, gt=0, description="stated T; if omitted and a site_test exists, T is derived")
-    s: float = Field(gt=0, lt=1)
+    s: float | None = Field(default=None, gt=0, lt=1, description="storativity; may come from the GAM lookup when omitted")
     k_ftd: float | None = Field(default=None, gt=0)
     source: SourceRef = SourceRef()
 

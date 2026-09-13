@@ -5,6 +5,7 @@ from __future__ import annotations
 from hydrostudy.figures import (
     distance_drawdown,
     drawdown_map,
+    gam_maps,
     location_map,
     property_map,
     strat_column,
@@ -26,6 +27,11 @@ def render_all(project) -> dict:
     for w in intake.proposed_wells:
         figs[f"schematic_{w.id}"] = well_schematic.render(project, w, out_dir / f"fig_schematic_{w.id}.png")
     figs["strat"] = strat_column.render(project, out_dir / "fig_strat_column.png")
+    for aq in sorted({w.aquifer for w in intake.proposed_wells}):
+        for param in ("t", "k", "s"):
+            r = gam_maps.render(project, aq, param, out_dir / f"fig_gam_{param}_{aq}.png")
+            if r:
+                figs[f"gam_{param}_{aq}"] = r
     for key in ("tds", "fe", "as", "ra_combined"):
         r = water_quality_map.render(project, key, out_dir / f"fig_wq_{key}.png")
         if r:

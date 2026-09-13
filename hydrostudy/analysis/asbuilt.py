@@ -28,13 +28,14 @@ def _asdict(obj):
     return d
 
 
-def analyze_as_built(project) -> dict:
+def analyze_as_built(project, pre_params: dict) -> dict:
+    """`pre_params` are the pre-drilling aquifer parameters resolved WITHOUT review overrides (the values the
+    pre-drilling report used), keyed by aquifer name."""
     intake = project.intake
     ab = intake.as_built
     well = next(w for w in intake.proposed_wells if w.id == ab.well_id)
-    aquifer = intake.aquifer(well.aquifer)
-    s_gam = aquifer.params.s
-    t_pre = aquifer.params.t_ft2d
+    s_gam = pre_params[well.aquifer]["s"]
+    t_pre = pre_params[well.aquifer]["t_ft2d"]
     flags = []
 
     # ---- logs

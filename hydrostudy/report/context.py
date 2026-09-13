@@ -42,6 +42,8 @@ def assign_numbers(project) -> tuple[dict, dict]:
     figs = project.artifacts["figures"]
     a = project.artifacts["analysis"]
     order = ["location", "wells", "property"] + [f"schematic_{w.id}" for w in project.intake.proposed_wells] + ["strat"]
+    for aq in sorted({w.aquifer for w in project.intake.proposed_wells}):
+        order += [f"gam_{prm}_{aq}" for prm in ("t", "k", "s") if f"gam_{prm}_{aq}" in figs]
     order += [k for k in ("wq_tds", "wq_fe", "wq_as", "wq_ra_combined") if k in figs]
     for sc in a["scenarios"]:
         for aq in sc["results_by_aquifer"]:
@@ -164,8 +166,8 @@ def build_context(project, numbering=None) -> dict:
         if w["rule_available"] and w["complies"]:
             result = f"According to the District well database, no other registered or permitted wells are located within {fmt_int(w['required_spacing_ft'])} ft of proposed {wn(w['well_id'])}; the proposed location complies with the spacing rule."
         elif w["rule_available"]:
-            names = _join([f"Map ID {c['map_id']} ({c['owner']}, {fmt_int(c['distance_ft'])} ft)" for c in w["conflicts"]])
-            result = f"The following registered or permitted wells are located within {fmt_int(w['required_spacing_ft'])} ft of proposed {wn(w['well_id'])}: {names}. [REVIEWER TO PROVIDE: spacing exception request and supporting impact documentation.]"
+            conflict_names = _join([f"Map ID {c['map_id']} ({c['owner']}, {fmt_int(c['distance_ft'])} ft)" for c in w["conflicts"]])
+            result = f"The following registered or permitted wells are located within {fmt_int(w['required_spacing_ft'])} ft of proposed {wn(w['well_id'])}: {conflict_names}. [REVIEWER TO PROVIDE: spacing exception request and supporting impact documentation.]"
         else:
             result = ""
         same = ""
@@ -233,8 +235,13 @@ def build_context(project, numbering=None) -> dict:
             if d.get("mismatch_note"):
                 deriv += f" [REVIEWER TO CONFIRM: {d['mismatch_note']}]"
         gam_note = ""
+        gam_figs = [fig(k) for k in fignum if k.startswith("gam_") and k.endswith("_" + name)]
+        if gam_figs:
+            gam_note = f"{_join(gam_figs)} show the model's transmissivity, hydraulic conductivity and storativity in the cells surrounding the site. "
+        if p.get("gam_note"):
+            gam_note += p["gam_note"][0].upper() + p["gam_note"][1:] + ". "
         if district.get("gam", {}).get("current_adopted"):
-            gam_note = (f"The District's guidelines reference the {district['gam']['cited_in_guidelines']}; the currently adopted regional model is the {district['gam']['current_adopted']}. "
+            gam_note += (f"The District's guidelines reference the {district['gam']['cited_in_guidelines']}; the currently adopted regional model is the {district['gam']['current_adopted']}. "
                         "The model version used for the parameters is stated in the table, and the selection should be confirmed with District staff.")
         aq_ctx.append({"name": name, "depth_sentence": depth_sentence, "thickness_sentence": thick_sentence, "confinement_sentence": conf_sentence,
                        "params_sentence": params_sentence, "derivation_sentence": deriv.strip(), "gam_note": gam_note})

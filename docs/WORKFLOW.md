@@ -12,7 +12,8 @@
 3. **Drop data files** into `data/` and describe them in `data/manifest.yaml` (see DATA_SOURCES.md):
    - `district_wells.csv` (District export of registered/permitted wells; required)
    - `water_quality_samples.csv` (TCEQ / TWDB samples, long format; strongly recommended)
-   - optional GeoJSON: `streams.geojson`, `parcels.geojson`, `boundary.geojson`, `county.geojson`
+   - optional GeoJSON: `streams.geojson`, `parcels.geojson`, `boundary.geojson` (fills the nearest-boundary distance
+     automatically), `county.geojson`; optional `springs.csv`; optional `gam_lookup.json` from `scripts/build_gam_lookup.py`
    - hydrography notes and the springs search result in the manifest
 4. **Validate**: `hydrostudy validate projects/<slug>`.
 5. **Run**: `hydrostudy run projects/<slug>`. Read the console summary: scenario results, checklist, placeholders, flags.

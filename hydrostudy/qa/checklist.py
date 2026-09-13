@@ -38,10 +38,10 @@ def build_checklist(project) -> dict:
         "table_drawdown_summary": (len(an["scenarios"]) > 0, "Section 6 tables", "missing_data"),
         "methodology": (True, "Section 6.1", "satisfied"),
         "figure_drawdown_well": (any(k.startswith("dd_proposed_") for k in figs), "Section 6 figures", "missing_data"),
-        "figure_drawdown_system": (any(k.startswith("dd_system_") for k in figs) or single_well_system, "Section 6 figures", "not_applicable" if single_well_system else "missing_data"),
-        "system_interference": (bool(an["system_interference"]) or single_well_system, "Section 6", "not_applicable" if single_well_system else "missing_data"),
+        "figure_drawdown_system": (any(k.startswith("dd_system_") for k in figs), "Section 6 figures", "not_applicable" if single_well_system else "missing_data"),
+        "system_interference": (bool(an["system_interference"]), "Section 6", "not_applicable" if single_well_system else "missing_data"),
         "table_impacts_well": (any(s["group"] == "proposed_only" for s in an["scenarios"]), "Section 6 tables", "missing_data"),
-        "table_impacts_system": (any(s["group"] == "system" for s in an["scenarios"]) or single_well_system, "Section 6 tables", "not_applicable" if single_well_system else "missing_data"),
+        "table_impacts_system": (any(s["group"] == "system" for s in an["scenarios"]), "Section 6 tables", "not_applicable" if single_well_system else "missing_data"),
     }
     if intake.mode == "lsgcd_post_drilling":
         ab = A.get("as_built") or {}
@@ -60,22 +60,27 @@ def build_checklist(project) -> dict:
     items = []
     key = "checklist_post" if intake.mode == "lsgcd_post_drilling" else "checklist"
     for item in district.get(key, []):
-        ok, where, fail_status = True, [], "missing_data"
+        where, statuses = [], []
         for ev in item.get("evidence", []):
             e = evidence.get(ev)
             if e is None:
                 continue
             present, loc, fs = e
             where.append(loc)
-            if not present:
-                ok = False
-                fail_status = fs
-        status = "satisfied" if ok else fail_status
-        if ok and not item.get("auto", True) and item.get("professional"):
-            # automated evidence present but the guideline needs a professional statement; satisfied only if opinion given
-            pass
-        if not ok and fail_status == "not_applicable":
+            if present:
+                statuses.append("satisfied")
+            else:
+                statuses.append(fs)
+        # evidence that is not applicable (e.g. system items on a single-well project) does not count against the item
+        applicable = [st for st in statuses if st != "not_applicable"]
+        if not statuses:
+            status = "missing_data"
+        elif not applicable:
             status = "not_applicable"
+        elif all(st == "satisfied" for st in applicable):
+            status = "satisfied"
+        else:
+            status = next(st for st in applicable if st != "satisfied")
         items.append({"id": item["id"], "text": item["text"], "status": status, "status_label": LABELS[status],
                       "where": "; ".join(dict.fromkeys(where)) + ((" - " + item["professional"]) if item.get("professional") and status != "satisfied" else ""),
                       "auto": item.get("auto", True)})

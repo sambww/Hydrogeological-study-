@@ -48,10 +48,13 @@ def render(project, path):
             "kind": "location", "has_county": has_county}
 
 
-def _graticule(ax, project, cx, cy, half, step_deg=0.02):
-    """Latitude/longitude grid lines with edge labels (local AEQD feet)."""
+def _graticule(ax, project, cx, cy, half, step_deg=None):
+    """Latitude/longitude grid lines with edge labels (local AEQD feet); spacing adapts to the extent."""
     import numpy as np
     crs = project.crs
+    if step_deg is None:
+        miles = half / FT_PER_MILE
+        step_deg = 0.02 if miles <= 4 else 0.05 if miles <= 10 else 0.1 if miles <= 25 else 0.25
     lon_min, lat_min = crs.to_wgs84(cx - half, cy - half)
     lon_max, lat_max = crs.to_wgs84(cx + half, cy + half)
     lons = np.arange(np.floor(lon_min / step_deg) * step_deg, lon_max + step_deg, step_deg)
@@ -61,7 +64,7 @@ def _graticule(ax, project, cx, cy, half, step_deg=0.02):
         x, y = crs.to_local(np.full_like(ys, lo), ys)
         ax.plot(x, y, color="#bbbbbb", lw=0.5, zorder=0)
         if cx - half < x[0] < cx + half:
-            ax.text(x[0], cy - half + 0.02 * half, f"{abs(lo):.2f}°W", ha="center", va="bottom", fontsize=6, color="#666")
+            ax.text(x[0], cy - half + 0.02 * half, f"{abs(lo):.2f}°W", ha="center", va="bottom", fontsize=6, color="#666", rotation=90 if step_deg < 0.1 else 0)
     for la in lats:
         xs = np.linspace(lon_min, lon_max, 50)
         x, y = crs.to_local(xs, np.full_like(xs, la))

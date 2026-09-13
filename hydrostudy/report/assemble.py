@@ -64,6 +64,8 @@ def build_report(project, pdf: bool = True, strict_lint: bool = True) -> dict:
              "system_interference": "system_interference.j2", "pumping_level": "pumping_level.j2",
              "summary": "summary_feasibility.j2" if feas else "summary.j2"}
     for name, fname in names.items():
+        if name == "system_interference" and not ctx["si"]:
+            continue
         sections[name] = env.from_string(_template(fname)).render(**ctx)
     for g in ctx["groups"]:
         sections[f"group_{g['key']}"] = env.from_string(_template("scenario_group.j2")).render(g=g, tab={"summary": ctx["tab"][f"summary_{g['key']}"], "edges": ctx["tab"][f"edges_{g['key']}"], "impacts": ctx["tab"][f"impacts_{g['key']}"]}, **{k: v for k, v in ctx.items() if k != "tab"})
@@ -129,6 +131,8 @@ def build_report(project, pdf: bool = True, strict_lint: bool = True) -> dict:
     doc.paragraphs(sections["site"])
     doc.table(tn["parameters"], "Aquifer parameters adopted for the interference simulations", ctx["parameters"]["header"], ctx["parameters"]["rows"], font_pt=8,
               note="** Hydraulic conductivity derived as transmissivity divided by aquifer thickness. GAM = TWDB groundwater availability model.")
+    for k in sorted((k for k in fn if k.startswith("gam_")), key=lambda k: fn[k]):
+        doc.figure(fn[k], figs[k]["caption"], figs[k]["path"], 5.8)
 
     # ---- 5 water quality
     doc.heading("5. Water Quality", 1)

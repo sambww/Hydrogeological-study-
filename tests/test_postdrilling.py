@@ -136,3 +136,21 @@ def test_post_analysis_and_report(post_built):
     assert {i["id"] for i in cl["items"]} >= {"III.1(a)", "III.3", "III.4", "III.5", "III.6"}
     assert all(i["status"] == "satisfied" for i in cl["items"] if i["id"] != "III.2")
     assert math.isclose(p.artifacts["analysis"]["aquifer_params"]["Evangeline"]["t_ft2d"], ab["adopted"]["t_ft2d"])
+
+
+def test_pre_drilling_reference_ignores_review_overrides(tmp_path_factory):
+    """The as-built comparison must be against the pre-drilling intake value, not a reviewer override."""
+    import shutil as _sh
+
+    import yaml as _yaml
+
+    from hydrostudy.pipeline import Project as _P
+    root = tmp_path_factory.mktemp("post2")
+    _sh.copytree(ROOT / "examples" / "black_oak_well_2_post", root / "p", ignore=_sh.ignore_patterns("build"))
+    (root / "p" / "review.yaml").write_text(_yaml.safe_dump({"reviewer": {"status": "draft"}, "decisions": {"t_ft2d": {"Evangeline": 1500}}, "opinions": {}, "notes": []}))
+    d = _yaml.safe_load((root / "p" / "intake.yaml").read_text())
+    d["as_built"]["pre_drilling_report"]["analysis_json"] = None
+    (root / "p" / "intake.yaml").write_text(_yaml.safe_dump(d, sort_keys=False))
+    p = _P(root / "p")
+    p.run_analysis()
+    assert p.artifacts["as_built"]["comparison"]["t_pre_ft2d"] == 1023

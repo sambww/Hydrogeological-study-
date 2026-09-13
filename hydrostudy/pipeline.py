@@ -51,22 +51,52 @@ class Project:
         pw = self.intake.proposed_wells[0]
         self.crs = LocalCRS(pw.lat, pw.lon)
         self.intake._local_xy = {w.id: tuple(map(float, self.crs.to_local(w.lon, w.lat))) for w in self.intake.all_wells}
+        self.boundary_geom = None
+        self.boundary_source = None
+        bpath = None
+        if self.intake.site.boundary_geojson and (self.dir / self.intake.site.boundary_geojson).exists():
+            bpath = self.dir / self.intake.site.boundary_geojson
+        elif self.manifest.get("boundary") is not None:
+            bpath = self.manifest.get("boundary").path
+        if bpath is not None:
+            from hydrostudy.geo.geometry import load_boundary
+            self.boundary_geom = load_boundary(bpath, self.crs)
+            self.boundary_source = str(bpath)
         self.artifacts: dict = {}
 
     # ---------------- stages ----------------
     def run_analysis(self) -> dict:
         intake, district, review = self.intake, self.district, self.review
         t0 = time.time()
+        boundary_flags = []
+        boundary_distances = {}
+        for w in intake.all_wells:
+            entry = {"ft": w.nearest_property_boundary_ft, "source": "intake" if w.nearest_property_boundary_ft is not None else None}
+            if self.boundary_geom is not None:
+                from hydrostudy.geo.geometry import distance_to_boundary_ft
+                d = distance_to_boundary_ft(*intake._local_xy[w.id], self.boundary_geom)
+                entry["polygon_ft"] = d
+                if w.nearest_property_boundary_ft is None:
+                    w.nearest_property_boundary_ft = d
+                    entry.update({"ft": d, "source": "boundary polygon"})
+                elif w.nearest_property_boundary_ft > 0 and abs(d - w.nearest_property_boundary_ft) / w.nearest_property_boundary_ft > 0.10:
+                    boundary_flags.append({"level": "review", "code": "BOUNDARY_DISTANCE_MISMATCH",
+                                           "text": f"{w.label}: intake boundary distance {w.nearest_property_boundary_ft:,.0f} ft differs from the "
+                                                   f"property polygon distance {d:,.0f} ft by more than 10%; intake value used."})
+            boundary_distances[w.id] = entry
+        from hydrostudy.data.gam import load_gam_lookup
+        gam = load_gam_lookup(self.manifest)
         as_built = None
         if intake.mode == "lsgcd_post_drilling":
             from hydrostudy.analysis.asbuilt import analyze_as_built
-            as_built = analyze_as_built(self)
+            pre_params = resolve_params(intake, review, gam, apply_review=False)
+            as_built = analyze_as_built(self, pre_params)
             if as_built["rerun_interference"] and as_built["adopted"]["t_ft2d"]:
                 aq = as_built["aquifer"]
                 review.decisions.t_ft2d = dict(review.decisions.t_ft2d or {}) | {aq: as_built["adopted"]["t_ft2d"]}
                 if as_built["adopted"]["s_source"] != "GAM (pre-drilling value)":
                     review.decisions.s = dict(review.decisions.s or {}) | {aq: as_built["adopted"]["s"]}
-        aquifer_params = resolve_params(intake, review)
+        aquifer_params = resolve_params(intake, review, gam)
 
         # search radius = max(1/2 mile, largest required spacing radius among proposed wells)
         spacing_radii = [district.required_spacing_ft(w.aquifer, w.max_rate_gpm) or 0 for w in intake.proposed_wells]
@@ -88,12 +118,14 @@ class Project:
         flags = collect_flags(intake, review, aquifer_params, spacing, scenarios, pumping, hydro, wq, district["id"])
         if as_built:
             flags = as_built["flags"] + flags
+        flags = boundary_flags + flags
 
         geo = {
             "crs_proj4": self.crs.proj4, "origin": {"lat": self.crs.lat0, "lon": self.crs.lon0},
             "wells_xy": intake._local_xy,
             "search_radius_ft": search_radius_ft, "spacing_radius_ft": spacing_radius_ft,
             "half_mile_ft": half_mile, "map_radius_ft": float(district.get("wells_map_radius_mi", 1.0)) * FT_PER_MILE,
+            "boundary_source": self.boundary_source, "boundary_distances": boundary_distances,
         }
         provenance = {
             "hydrostudy_version": __version__, "generated_at": time.strftime("%Y-%m-%d %H:%M:%S"),
@@ -119,6 +151,7 @@ class Project:
                           "_hydro_geoms": hydro_geoms}
         if as_built:
             self.artifacts["as_built"] = as_built
+        self.artifacts["gam"] = gam
         for k, v in self.artifacts.items():
             if k.startswith("_"):
                 continue

@@ -35,6 +35,15 @@ def geojson_to_local(geojson: dict, crs: LocalCRS) -> list:
     return out
 
 
-def distance_to_boundary_ft(x_ft: float, y_ft: float, boundary: Polygon) -> float:
-    """Distance from a point to the nearest edge of a property polygon (0 if on the edge)."""
-    return float(boundary.exterior.distance(Point(x_ft, y_ft)))
+def distance_to_boundary_ft(x_ft: float, y_ft: float, boundary) -> float:
+    """Distance from a point to the nearest edge of a property polygon or multipolygon (0 if on the edge)."""
+    return float(boundary.boundary.distance(Point(x_ft, y_ft)))
+
+
+def load_boundary(path, crs: LocalCRS):
+    """Union of the polygon features in a GeoJSON file, in local feet (None if no polygons)."""
+    from shapely.ops import unary_union
+
+    from hydrostudy.geo.io import read_geojson
+    geoms = [g for _, g in geojson_to_local(read_geojson(path), crs) if g.geom_type in ("Polygon", "MultiPolygon")]
+    return unary_union(geoms) if geoms else None
