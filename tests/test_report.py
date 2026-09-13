@@ -39,8 +39,20 @@ def test_docx_structure(built):
     nums = [int(c.split(":")[0].split()[1]) for c in caps]
     assert nums == list(range(1, len(nums) + 1))
     assert "DRAFT - NOT SEALED" in doc.sections[0].header.paragraphs[-1].text
-    assert len(result["placeholders"]) == 4
+    # Four reviewer opinions plus the spacing-multiplier confirmation: the LSGCD multipliers were reconstructed from
+    # accepted submittals rather than read from the District Rules, so the report must ask rather than assert.
+    assert len(result["placeholders"]) == 5
+    assert any(k == "spacing" and "spacing multiplier" in v for k, v in result["placeholders"])
     assert "98.7" in text and "121.5" in text and "52.31" in text
+
+
+def test_spacing_wording_asks_rather_than_asserts(built):
+    """LSGCD multipliers came from accepted submittals, not the Rules, so the report must not claim compliance."""
+    _, result = built
+    text = "\n".join(par.text for par in Document(result["docx"]).paragraphs)
+    assert "[REVIEWER TO CONFIRM: the current District spacing multiplier" in text
+    assert "complies with the spacing rule" not in text
+    assert "meets this spacing distance" in text
 
 
 def test_checklist(built):

@@ -29,6 +29,17 @@ def collect_flags(intake, review, aquifer_params, spacing, scenarios, pumping_le
         if w["same_system_inside"]:
             add("info", "SAME_SYSTEM_INSIDE_RADIUS", f"{w['well_id']}: applicant's own well(s) inside the spacing radius "
                 f"(map IDs {[x['map_id'] for x in w['same_system_inside']]}); confirm treatment with the District.")
+    st = spacing.get("rule_status") or {}
+    if any(w.get("provisional") for w in spacing["wells"]):
+        note = st.get("spacing_source_note") or "The spacing multiplier was not read from the District's rules document."
+        add("review", "SPACING_RULE_UNVERIFIED", "Spacing distances are provisional: " + note
+            + " The report states the distance used and asks the reviewer to confirm it rather than asserting compliance.")
+    if st.get("stale") and district_id != "generic":
+        if st.get("verified_on"):
+            add("review", "DISTRICT_RULES_STALE", f"District rules were last verified on {st['verified_on']}, which is outside "
+                "the re-check window; confirm the current rules before submittal.")
+        else:
+            add("review", "DISTRICT_RULES_STALE", "District rules carry no verification date; confirm the current rules before submittal.")
     other_aq = False
     for sc in scenarios:
         for f in sc["duration_flags"]:

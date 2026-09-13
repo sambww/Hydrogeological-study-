@@ -17,8 +17,15 @@ def build_checklist(project) -> dict:
     def has_fig(prefix):
         return any(k.startswith(prefix) for k in figs)
 
+    sp_wells = an["spacing"]["wells"]
+    sp_rules_available = all(w["rule_available"] for w in sp_wells)
+    # A spacing distance computed from a multiplier that was never read from the District's rules document cannot be
+    # signed off automatically, even when no conflicting well is found.
+    sp_provisional = any(w.get("provisional") for w in sp_wells)
+
     evidence = {
-        "spacing": (all(w["rule_available"] for w in an["spacing"]["wells"]) and not an["spacing"]["any_violation"], "Section 1", "missing_data" if not all(w["rule_available"] for w in an["spacing"]["wells"]) else "needs_professional_input"),
+        "spacing": (sp_rules_available and not sp_provisional and not an["spacing"]["any_violation"], "Section 1",
+                    "missing_data" if not sp_rules_available else "needs_professional_input"),
         "figure_schematic": (has_fig("schematic_"), "Section 2 figure(s)", "missing_data"),
         "table_construction": (all(w.screen and w.casing and w.borehole for w in intake.proposed_wells), "Section 2 table", "missing_data"),
         "lithology": (all(w.anticipated_lithology for w in intake.proposed_wells) and bool(op.lithology_basis), "Section 2", "needs_professional_input"),

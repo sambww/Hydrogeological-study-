@@ -18,6 +18,7 @@ from hydrostudy.data.manifest import load_manifest
 from hydrostudy.data.water_quality import build_water_quality
 from hydrostudy.data.wells import build_nearby_wells
 from hydrostudy.districts.loader import load_district
+from hydrostudy.districts.status import rule_status
 from hydrostudy.geo.crs import LocalCRS
 from hydrostudy.schema.loaders import load_intake, load_review
 from hydrostudy.units import FT_PER_MILE
@@ -105,7 +106,8 @@ class Project:
         search_radius_ft = max(half_mile, spacing_radius_ft)
 
         nearby = build_nearby_wells(intake, district, self.crs, self.manifest, search_radius_ft, spacing_radius_ft)
-        spacing = spacing_analysis(intake, district, nearby)
+        rules_status = rule_status(district)
+        spacing = spacing_analysis(intake, district, nearby, rules_status)
         wq = build_water_quality(self.manifest)
         site_xy = intake._local_xy[intake.proposed_wells[0].id]
         hydro = build_hydrography(self.manifest, self.crs, site_xy, float(district.get("surface_water_radius_mi", 1.0)))
@@ -132,7 +134,10 @@ class Project:
             "project_dir": str(self.dir), "intake": "intake.yaml", "review": "review.yaml",
             "district_rules": {"id": district["id"], "version": district["rules"].get("version"),
                                "verified_on": district["rules"].get("verified_on"),
-                               "verified_by": district["rules"].get("verified_by")},
+                               "verified_by": district["rules"].get("verified_by"),
+                               "source": rules_status["source"],
+                               "spacing_source": rules_status["spacing_source"],
+                               "stale": rules_status["stale"]},
             "files": [f.provenance() for f in self.manifest.files.values()],
             "tceq_limits": {"version": wq["limits_version"], "verify_on": wq["limits_verify_on"]},
         }

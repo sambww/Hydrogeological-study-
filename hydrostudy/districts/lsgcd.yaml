@@ -13,10 +13,21 @@ rules:
   version: "Rules as amended; Hydrogeological Report Guidelines adopted 11-11-2022 (Rules 2.6(b)(15), 2.12, 3.4)"
   verified_on: "2026-09-12"
   verified_by: "hydrostudy setup (from the 11-11-2022 guideline PDF and 2023 consultant reports); re-verify against current LSGCD Rules before each submittal"
+  # source: primary  = read from a District-published document; derived = reconstructed from other sources.
+  # The report-content requirements and the reporting threshold below come from the District's own published
+  # Hydrogeological Report Guidelines (11-11-2022). The spacing multipliers do not; see spacing.source.
+  source: primary
+  source_note: "Report contents and the reporting threshold are taken from the District's published Hydrogeological Report Guidelines (11-11-2022)."
+  recheck_after_days: 180
 report_threshold_gpm: 700          # system aggregate capacity from the same District aquifer
 threshold_note: "A hydrogeological report is required for a new well or well system with aggregate capacity of 700 gpm or greater, for increases of existing wells to 700 gpm or greater, and for spacing exceptions (Guidelines I.B)."
 spacing:
   rule_reference: "LSGCD Rule 3.3 (verify current multipliers)"
+  # These multipliers were read back from consultant reports the District accepted in 2023, NOT from the District
+  # Rules document, which this project has never been able to retrieve. Until someone reads Rule 3.3 and sets this to
+  # primary, the report qualifies every spacing conclusion and the reviewer is asked to confirm the distance.
+  source: derived
+  source_note: "Multipliers were reconstructed from hydrogeological reports the District accepted in 2023, not read from the District Rules. Confirm the current multiplier in LSGCD Rule 3.3 before submittal."
   well_to_well:
     - aquifers: [Chicot, Evangeline]
       ft_per_gpm: 2.0

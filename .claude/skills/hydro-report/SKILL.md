@@ -13,6 +13,9 @@ You are helping a water-well contractor produce a DRAFT hydrogeological report t
 - Never invent wells, coordinates, depths, sample results, aquifer parameters or references. If an input is missing,
   ask for it or leave it null so the pipeline flags it.
 - Do not write conclusions or opinions; those belong to the reviewer in `review.yaml`.
+- Never state that a well complies with a district spacing rule. The multipliers were reconstructed from accepted
+  submittals, not read from the District Rules, so the report asks the reviewer to confirm the distance. Do not
+  change a district file's `source` to `primary` on anything short of the rules document itself.
 
 ## Steps
 0. If this is a new machine or something fails to import, run `hydrostudy doctor --network` and follow `docs/RUNBOOK.md`.

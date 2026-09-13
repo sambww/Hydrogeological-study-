@@ -155,16 +155,28 @@ def build_context(project, numbering=None) -> dict:
     # ---- spacing
     sp_ctx = []
     for w in an["spacing"]["wells"]:
-        if w["rule_available"]:
+        if w["rule_available"] and not w["provisional"]:
             rule = (f"District spacing rules for wells completed in the {w['aquifer']} Aquifer require a minimum distance to other non-exempt wells of "
                     f"{w['ft_per_gpm']:g} ft multiplied by the maximum allowable pumping rate; for the {fmt_int(w['max_rate_gpm'])}-gpm rate of proposed {wn(w['well_id'])} "
                     f"this is {fmt_int(w['required_spacing_ft'])} ft.")
+        elif w["rule_available"]:
+            # The multiplier was not read from the District's own rules document, so it is described as the distance
+            # this analysis applied rather than as the District's requirement, and the reviewer is asked to confirm it.
+            rule = (f"The spacing distance applied to proposed {wn(w['well_id'])}, completed in the {w['aquifer']} Aquifer, is "
+                    f"{w['ft_per_gpm']:g} ft multiplied by the maximum allowable pumping rate, which for its "
+                    f"{fmt_int(w['max_rate_gpm'])}-gpm rate gives {fmt_int(w['required_spacing_ft'])} ft. "
+                    "[REVIEWER TO CONFIRM: the current District spacing multiplier for this aquifer; the value used here was "
+                    "taken from previously accepted submittals rather than from the District Rules.]")
         elif district["id"] == "generic":
             rule = f"No groundwater-district spacing rule is configured for this site; the distances from proposed {wn(w['well_id'])} to the nearest known wells are listed in {tab('nearby')} for reference."
         else:
             rule = f"[REVIEWER TO PROVIDE: no spacing multiplier is configured for the {w['aquifer']} Aquifer; state the District rule and the required distance for {wn(w['well_id'])}.]"
-        if w["rule_available"] and w["complies"]:
+        if w["rule_available"] and w["complies"] and not w["provisional"]:
             result = f"According to the District well database, no other registered or permitted wells are located within {fmt_int(w['required_spacing_ft'])} ft of proposed {wn(w['well_id'])}; the proposed location complies with the spacing rule."
+        elif w["rule_available"] and w["complies"]:
+            result = (f"According to the District well database, no other registered or permitted wells are located within "
+                      f"{fmt_int(w['required_spacing_ft'])} ft of proposed {wn(w['well_id'])}. Subject to confirmation of the "
+                      "multiplier above, the proposed location meets this spacing distance.")
         elif w["rule_available"]:
             conflict_names = _join([f"Map ID {c['map_id']} ({c['owner']}, {fmt_int(c['distance_ft'])} ft)" for c in w["conflicts"]])
             result = f"The following registered or permitted wells are located within {fmt_int(w['required_spacing_ft'])} ft of proposed {wn(w['well_id'])}: {conflict_names}. [REVIEWER TO PROVIDE: spacing exception request and supporting impact documentation.]"

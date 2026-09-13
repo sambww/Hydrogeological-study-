@@ -21,7 +21,10 @@ Use the `/hydro-report` skill (`.claude/skills/hydro-report/SKILL.md`) to walk a
 - Theis superposition per aquifer (`analysis/theis.py`, `analysis/scenarios.py`); wells in other aquifers get "not applicable".
 - Pumped-well drawdown is evaluated at `r_w_ft` (default: borehole radius across the screen). Consultants have used 0.5 and 1.0 ft.
 - Opinions and conclusions live in `review.yaml`; when null the report shows highlighted `[P.G. TO PROVIDE: ...]` placeholders.
-- District rules live in `hydrostudy/districts/*.yaml` with `verified_on`; re-verify before each submittal.
+- District rules live in `hydrostudy/districts/*.yaml` with `verified_on` and a `source` (`primary` = read from a
+  District-published document, `derived` = reconstructed). Spacing conclusions are only stated as compliance when
+  `spacing.source` is primary and the verification is current; otherwise the narrative asks the reviewer to confirm
+  the multiplier (`districts/status.py`). Re-verify before each submittal; see `docs/RUNBOOK.md` section G.
 - Never overwrite a final report: bump `report.revision.number`.
 - The three pre-drilling `examples/` are transcriptions of public submittals and are the regression baseline (`tests/`);
   `examples/black_oak_well_2_post` uses SYNTHETIC test data (see its manifest) to exercise the post-drilling mode.
