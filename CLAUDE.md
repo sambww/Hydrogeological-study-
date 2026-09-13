@@ -22,5 +22,7 @@ Use the `/hydro-report` skill (`.claude/skills/hydro-report/SKILL.md`) to walk a
 - Opinions and conclusions live in `review.yaml`; when null the report shows highlighted `[P.G. TO PROVIDE: ...]` placeholders.
 - District rules live in `hydrostudy/districts/*.yaml` with `verified_on`; re-verify before each submittal.
 - Never overwrite a final report: bump `report.revision.number`.
-- The three `examples/` are transcriptions of public submittals and are the regression baseline (`tests/`).
+- The three pre-drilling `examples/` are transcriptions of public submittals and are the regression baseline (`tests/`);
+  `examples/black_oak_well_2_post` uses SYNTHETIC test data (see its manifest) to exercise the post-drilling mode.
+- Post-drilling mode (`lsgcd_post_drilling`): `analysis/asbuilt.py`, `analysis/pumptest.py`, `report/assemble_post.py`.
 - No network access is required to run. Live data connectors (Phase 2) are documented in `docs/DATA_SOURCES.md`.

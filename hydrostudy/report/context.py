@@ -76,11 +76,11 @@ def scenario_groups(project) -> list[dict]:
     return groups
 
 
-def build_context(project) -> dict:
+def build_context(project, numbering=None) -> dict:
     intake, review, district = project.intake, project.review, project.district
     A = project.artifacts
     an, geo, nearby, wq, hydro = A["analysis"], A["geo"], A["nearby_wells"], A["water_quality"], A["hydrography"]
-    fignum, tabnum = assign_numbers(project)
+    fignum, tabnum = numbering if numbering else assign_numbers(project)
     figs = A["figures"]
     names = {w.id: w.label for w in intake.all_wells}
 

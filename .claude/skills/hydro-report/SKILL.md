@@ -30,6 +30,12 @@ You are helping a water-well contractor produce a DRAFT hydrogeological report t
    placeholder list. When they return `review.yaml`, re-run; for the sealed version set `reviewer.status: final`
    and bump `report.revision.number`.
 
+## Post-drilling submittal
+When the well has been drilled and tested, copy the project, set `mode: lsgcd_post_drilling`, and fill the `as_built:`
+block (as-built construction, static level and date, pump, log inventory with LAS files, aquifer-test CSVs, field
+parameters) following `examples/black_oak_well_2_post/intake.yaml` and `docs/WORKFLOW.md`. Never fabricate test data;
+if a series is missing, leave the test out so the checklist flags it.
+
 ## Useful checks
 - Spacing radius = multiplier x gpm (LSGCD: Chicot/Evangeline 2.0, Jasper 1.5, Catahoula 1.0 ft/gpm; verify).
 - Max-production days = annual volume / (rate x 1440).

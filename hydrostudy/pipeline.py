@@ -57,6 +57,15 @@ class Project:
     def run_analysis(self) -> dict:
         intake, district, review = self.intake, self.district, self.review
         t0 = time.time()
+        as_built = None
+        if intake.mode == "lsgcd_post_drilling":
+            from hydrostudy.analysis.asbuilt import analyze_as_built
+            as_built = analyze_as_built(self)
+            if as_built["rerun_interference"] and as_built["adopted"]["t_ft2d"]:
+                aq = as_built["aquifer"]
+                review.decisions.t_ft2d = dict(review.decisions.t_ft2d or {}) | {aq: as_built["adopted"]["t_ft2d"]}
+                if as_built["adopted"]["s_source"] != "GAM (pre-drilling value)":
+                    review.decisions.s = dict(review.decisions.s or {}) | {aq: as_built["adopted"]["s"]}
         aquifer_params = resolve_params(intake, review)
 
         # search radius = max(1/2 mile, largest required spacing radius among proposed wells)
@@ -77,6 +86,8 @@ class Project:
         interference = {sc["key"]: system_interference_matrix(sc) for sc in scenarios if sc["group"] == "system"}
         pumping = pumping_level_checks(intake, scenarios)
         flags = collect_flags(intake, review, aquifer_params, spacing, scenarios, pumping, hydro, wq, district["id"])
+        if as_built:
+            flags = as_built["flags"] + flags
 
         geo = {
             "crs_proj4": self.crs.proj4, "origin": {"lat": self.crs.lat0, "lon": self.crs.lon0},
@@ -106,6 +117,8 @@ class Project:
         self.artifacts = {"geo": geo, "nearby_wells": nearby, "water_quality": wq, "hydrography": hydro,
                           "analysis": analysis, "flags": flags, "provenance": provenance,
                           "_hydro_geoms": hydro_geoms}
+        if as_built:
+            self.artifacts["as_built"] = as_built
         for k, v in self.artifacts.items():
             if k.startswith("_"):
                 continue
@@ -115,14 +128,17 @@ class Project:
         return self.artifacts
 
     def run_figures(self):
-        from hydrostudy.figures import render_all
-        self.artifacts["figures"] = render_all(self)
+        from hydrostudy.figures import render_all, render_all_post
+        self.artifacts["figures"] = render_all_post(self) if self.intake.mode == "lsgcd_post_drilling" else render_all(self)
         dump_json(self.artifacts["figures"], self.build_dir / "figures.json")
         return self.artifacts["figures"]
 
-    def run_report(self, pdf: bool = True):
-        from hydrostudy.report.assemble import build_report
-        result = build_report(self, pdf=pdf)
+    def run_report(self, pdf: bool = True, strict_lint: bool = True):
+        if self.intake.mode == "lsgcd_post_drilling":
+            from hydrostudy.report.assemble_post import build_post_report as build_report
+        else:
+            from hydrostudy.report.assemble import build_report
+        result = build_report(self, pdf=pdf, strict_lint=strict_lint)
         dump_json(result, self.build_dir / "report.json")
         return result
 

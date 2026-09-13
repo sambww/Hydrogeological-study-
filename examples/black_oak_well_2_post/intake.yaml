@@ -1,0 +1,284 @@
+# Post-drilling example for Black Oak Well No. 2. All test series, log file and lab values are SYNTHETIC (see data/manifest.yaml).
+schema_version: 1
+mode: lsgcd_post_drilling
+report:
+  title: Lone Star Groundwater Conservation District Post-Drilling Hydrogeological
+    Report - Black Oak Water System Well No. 2
+  date: '2023-09-15'
+  revision:
+    number: 1
+    reason: null
+  issuing_firm: generic
+applicant:
+  name: Aqua Texas, Inc.
+  pws_name: Black Oak Water System
+  pws_id: TX 1700851
+  system_name: Black Oak Water System
+district:
+  id: lsgcd
+  county: Montgomery
+  rules_version: Guidelines 11-11-2022
+  verified_on: '2023-05-01'
+site:
+  address: Black Oak Dr., Magnolia, Texas
+  description: southern Montgomery County
+  nearest_boundary_distance_ft: 25
+  boundary_distance_source: property map
+aquifers:
+- name: Evangeline
+  top_ft_bgl: 260
+  bottom_ft_bgl: 944
+  source: Gulf Coast Aquifer (northern portion) GAM layer surfaces (Kasmarek, 2013)
+  confinement:
+    status: confined
+    confining_unit: Chicot clays / upper Fleming clays
+    thickness_ft: null
+    source: null
+  params:
+    t_ft2d: 1023
+    s: 0.000336
+    k_ftd: 1.5
+    source:
+      kind: site_test
+      citation: Transmissivity from 36-hour aquifer test of Black Oak Well No. 1 (TDLR
+        tracking no. 442731) in lieu of the GAM value of 1,231.2 ft2/day; storativity
+        from the GAM (Kasmarek, 2013)
+      model_version: HAGM (Kasmarek, 2013)
+      notes: 'GAM values at the site: T = 1,231.2 ft2/day, K = 1.2 ft/day, S = 3.36
+        x 10^-4'
+  site_test:
+    well_ref: W1
+    q_gpm: 270
+    duration_hr: 36
+    swl_ft: 364
+    pwl_ft: 434.9
+    r_w_ft: 0.5
+    tracking_no: '442731'
+proposed_wells:
+- id: W2
+  display_name: Well No. 2
+  lat: 30° 10' 12.60" N
+  lon: 95° 34' 41.15" W
+  elevation_ft_msl: 166
+  elevation_source: topographic map
+  aquifer: Evangeline
+  max_rate_gpm: 385
+  total_depth_ft: 780
+  static_water_level_ft: 350
+  swl_source: nearby Well No. 1 (364 ft bgl in 2017), rounded
+  borehole:
+  - top_ft: 0
+    bottom_ft: 700
+    diameter_in: 11.875
+  - top_ft: 700
+    bottom_ft: 780
+    diameter_in: 7.875
+  casing:
+  - top_ft: -2
+    bottom_ft: 700
+    diameter_in: 8.625
+    wall_in: 0.322
+    material: steel
+  screen:
+  - top_ft: 700
+    bottom_ft: 780
+    diameter_in: 6.625
+    material: steel
+    slot_in: null
+  cement:
+  - top_ft: 0
+    bottom_ft: 700
+    method: pressure cemented
+  packer_depth_ft: 700
+  anticipated_lithology:
+  - top_ft: 0
+    bottom_ft: 220
+    description: Sandy clay
+  - top_ft: 220
+    bottom_ft: 310
+    description: Sand
+  - top_ft: 310
+    bottom_ft: 360
+    description: Clay
+  - top_ft: 360
+    bottom_ft: 400
+    description: Sandy clay
+  - top_ft: 400
+    bottom_ft: 600
+    description: Sand
+  - top_ft: 600
+    bottom_ft: 660
+    description: Sandy clay
+  - top_ft: 660
+    bottom_ft: 780
+    description: Sand
+  r_w_ft: 0.5
+  nearest_property_boundary_ft: 25
+existing_wells:
+- id: W1
+  display_name: Well No. 1
+  registration_no: '2016092601'
+  permit_no: OP-16092601
+  lat: 30.17
+  lon: -95.578056
+  aquifer: Evangeline
+  max_rate_gpm: 350
+  total_depth_ft: 655
+  screen:
+  - top_ft: 600
+    bottom_ft: 655
+    diameter_in: 6.0
+    material: steel
+  status: Operating
+  include_in_system: true
+  r_w_ft: 0.5
+  nearest_property_boundary_ft: 50
+permit:
+  annual_volume_gal: 29000000
+analysis:
+  cone_edge_thresholds_ft:
+  - 1.0
+  - 5.0
+  contour_interval_ft: 5
+  map_radius_mi: 1.0
+data:
+  manifest: data/manifest.yaml
+as_built:
+  well_id: W2
+  completion_date: '2023-08-01'
+  tdlr_tracking_no: SYNTHETIC-000000
+  driller: Ballard Water Well Company, LLC
+  construction:
+    total_depth_ft: 780
+    borehole:
+    - top_ft: 0
+      bottom_ft: 700
+      diameter_in: 11.875
+    - top_ft: 700
+      bottom_ft: 780
+      diameter_in: 7.875
+    casing:
+    - top_ft: -2
+      bottom_ft: 700
+      diameter_in: 8.625
+      wall_in: 0.322
+      material: steel
+    blank_liner:
+    - top_ft: 690
+      bottom_ft: 700
+      diameter_in: 6.625
+      material: steel
+    screen:
+    - top_ft: 700
+      bottom_ft: 780
+      diameter_in: 6.625
+      material: steel
+      slot_in: 0.04
+    cement:
+    - top_ft: 0
+      bottom_ft: 700
+      method: pressure cemented
+    filter_pack: []
+    packer_depth_ft: 700
+    lithology:
+    - top_ft: 0
+      bottom_ft: 225
+      description: Sandy clay
+    - top_ft: 225
+      bottom_ft: 315
+      description: Sand
+    - top_ft: 315
+      bottom_ft: 365
+      description: Clay
+    - top_ft: 365
+      bottom_ft: 405
+      description: Sandy clay
+    - top_ft: 405
+      bottom_ft: 605
+      description: Sand
+    - top_ft: 605
+      bottom_ft: 662
+      description: Sandy clay
+    - top_ft: 662
+      bottom_ft: 780
+      description: Sand
+  static_water_level_ft: 352
+  swl_date: '2023-08-14'
+  pump:
+    diameter_in: 6.0
+    setting_ft: 560
+    hp: 60
+    make_model: submersible (synthetic example)
+  logs:
+  - type: resistivity
+    curves:
+    - 16-inch normal
+    - 64-inch normal
+    top_ft: 0
+    bottom_ft: 780
+    date: '2023-07-28'
+    las_file: data/black_oak_2_openhole.las
+    open_hole: true
+    casing_at_log: open
+  - type: sp
+    curves:
+    - SP
+    top_ft: 0
+    bottom_ft: 780
+    date: '2023-07-28'
+    las_file: data/black_oak_2_openhole.las
+    open_hole: true
+  - type: gamma
+    curves:
+    - GR
+    top_ft: 0
+    bottom_ft: 780
+    date: '2023-07-28'
+    las_file: data/black_oak_2_openhole.las
+    open_hole: true
+  tests:
+  - id: CR-1
+    kind: constant_rate
+    rate_gpm: 385
+    start: 2023-08-15 08:00
+    duration_min: 2160
+    data_file: data/test_cr_385gpm.csv
+    r_w_ft: 0.5
+    notes: 36-hour constant-rate test followed by 12 hours of recovery (SYNTHETIC
+      series)
+  - id: ST-1
+    kind: step
+    steps:
+    - rate_gpm: 200
+      duration_min: 120
+    - rate_gpm: 300
+      duration_min: 120
+    - rate_gpm: 385
+      duration_min: 120
+    start: 2023-08-14 09:00
+    data_file: data/test_step.csv
+    r_w_ft: 0.5
+    notes: three-step test (SYNTHETIC series)
+  field_params:
+  - time: 2023-08-15 09:00
+    sc_us_cm: 610
+    temp_c: 25.1
+    ph: 7.2
+    source: field meter during test
+  - time: 2023-08-16 08:00
+    sc_us_cm: 598
+    temp_c: 25.3
+    ph: 7.1
+    source: field meter during test
+  - time: 2023-08-16 20:00
+    sc_us_cm: 595
+    temp_c: 25.3
+    ph: 7.1
+    source: field meter at end of test
+  rerun_interference: true
+  s_source: gam
+  pre_drilling_report:
+    title: Lone Star Groundwater Conservation District Hydrogeological Report - Black
+      Oak Water System Well No. 2
+    date: '2023-05-01'
+    analysis_json: ../black_oak_well_2/build/analysis.json

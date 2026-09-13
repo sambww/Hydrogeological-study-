@@ -24,7 +24,8 @@ def well_function(u):
 
 def theis_drawdown(q_gpm: float, t_ft2d: float, s: float, r_ft, t_days: float):
     """Drawdown (ft) at radius r after t days from one well pumping q_gpm."""
-    if t_ft2d <= 0 or s <= 0 or t_days <= 0:
+    t_days = np.asarray(t_days, dtype=float)
+    if t_ft2d <= 0 or s <= 0 or np.any(t_days <= 0):
         raise ValueError("T, S and t must be positive")
     r = np.asarray(r_ft, dtype=float)
     if np.any(r <= 0):

@@ -1,0 +1,9 @@
+{{ ab.field_sentence }} {{ tab.field }} lists the field measurements.
+
+{% if wq.available %}
+{{ wq.representative_sentence }} {{ wq.exceedance_sentence }} {{ wq.radionuclide_sentence }}
+{% else %}
+[P.G. TO PROVIDE: laboratory results for the post-construction samples required by TCEQ (Guidelines III.2 and III.6).]
+{% endif %}
+
+{% if opinions.water_quality %}{{ opinions.water_quality }}{% else %}[P.G. TO PROVIDE: interpretation of the post-construction water quality and any treatment or blending considerations.]{% endif %}

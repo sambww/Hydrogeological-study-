@@ -89,14 +89,12 @@ def cmd_run(args):
     p.run_figures()
     cl = p.run_checklist()
     p.artifacts["checklist"] = cl
-    from hydrostudy.report.assemble import LintError, build_report
+    from hydrostudy.report.assemble import LintError
     try:
-        result = build_report(p, pdf=not args.no_pdf, strict_lint=not args.no_strict_lint)
+        result = p.run_report(pdf=not args.no_pdf, strict_lint=not args.no_strict_lint)
     except LintError as e:
         print(f"LINT FAILURE: {e}", file=sys.stderr)
         return 3
-    from hydrostudy.pipeline import dump_json
-    dump_json(result, p.build_dir / "report.json")
     _print_summary(p, result, cl, args.no_pdf)
     return 0
 

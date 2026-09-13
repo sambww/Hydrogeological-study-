@@ -1,7 +1,7 @@
 # hydrostudy
 
 Generates a complete draft hydrogeological report for Texas groundwater-district permit applications (Lone Star GCD
-pre-drilling report format; feasibility-study variant) from a YAML intake and local public-data extracts. A licensed
+pre-drilling and post-drilling report formats; feasibility-study variant) from a YAML intake and local public-data extracts. A licensed
 Texas P.G. or P.E. reviews, completes the highlighted opinion placeholders and seals the document.
 
 What it produces (per project, in `build/`):

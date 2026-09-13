@@ -1,0 +1,9 @@
+{{ ab.tests_intro_sentence }} {{ tab.tests }} summarizes the tests and the parameters derived from them; the recorded water levels are tabulated in Appendix C.
+
+Transmissivity was estimated from the constant-rate data with the Cooper and Jacob (1946) straight-line approximation of the Theis (1935) solution, in which drawdown plotted against the logarithm of time becomes linear once the dimensionless time parameter u is less than about 0.01; transmissivity is proportional to the pumping rate divided by the drawdown change per log cycle. The late-time points satisfying that criterion were selected iteratively. As a check, the Theis curve was matched to the full record by least squares, and where recovery measurements were recorded the residual drawdown was analyzed by the Theis recovery method. For a single-well test the storativity cannot be resolved independently of well losses and the effective well radius, so the storativity was held at the value adopted in the pre-drilling analysis and is reported as not determinable from the test. Step-drawdown data, where available, were analyzed by the Jacob (1947) method to separate the formation-loss and well-loss components and to estimate the well efficiency at the design rate (Kruseman and de Ridder, 1990).
+
+{% for t in ab.tests %}
+{{ t.sentence }}
+{% endfor %}
+
+{{ ab.adopted_sentence }} {{ ab.comparison_sentence }} {% if opinions.parameter_selection %}{{ opinions.parameter_selection }}{% else %}[P.G. TO PROVIDE: judgment on the validity of the test(s) and on the transmissivity to be adopted for the well.]{% endif %}

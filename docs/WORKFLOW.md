@@ -25,3 +25,22 @@
 Scenario logic (LSGCD): proposed well alone and all same-aquifer system wells, each at 24 hours and at
 `annual_volume / (rate x 1440)` days ("maximum production"). Feasibility mode: fixed durations (e.g. 10 and 20 years)
 with optional single-well sub-cases.
+
+## Post-drilling submittal (Guidelines Section III)
+
+After the well is drilled, logged and tested:
+1. Copy the pre-drilling project (or scaffold a new one) and set `mode: lsgcd_post_drilling`.
+2. Add an `as_built:` block (see `examples/black_oak_well_2_post/intake.yaml`): as-built construction (borehole,
+   casing, blank liner, screen, cement, filter pack, packer), completion date and TDLR tracking number, static water
+   level and date, permanent pump (diameter, setting, hp), geophysical log inventory with LAS files, aquifer tests
+   (constant-rate with recovery, step test) with their CSV data files, field parameters, and a reference to the
+   pre-drilling `build/analysis.json` for comparison.
+3. Put the post-construction lab results in the water-quality CSV with `well_id` = the new well.
+4. `hydrostudy run projects/<well>_post`. The pipeline fits Cooper-Jacob, Theis and recovery to the constant-rate
+   test, Jacob's method to the step test, adopts a transmissivity, compares it with the pre-drilling value, re-runs
+   the interference scenarios with the measured transmissivity (`rerun_interference: true`), and writes the Section III
+   report with the log inventory, test summary, parameter table, field parameters and lab results.
+
+Test CSV format: `elapsed_min` plus `drawdown_ft` or `water_level_ft` (ft bgl); optional `rate_gpm`, `phase`
+(pumping|recovery) and `t_since_stop_min`. Storativity cannot be determined from a single-well test; it is held at the
+pre-drilling value unless an observation well is recorded (`observation_well: {id, distance_ft}`).

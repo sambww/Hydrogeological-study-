@@ -266,9 +266,122 @@ class DataFiles(BaseModel):
     manifest: str = "data/manifest.yaml"
 
 
+# ---------------------------------------------------------------------------------------------------------------
+# Post-drilling (Guidelines Section III)
+# ---------------------------------------------------------------------------------------------------------------
+
+class PumpSpec(BaseModel):
+    diameter_in: float = Field(gt=0)
+    setting_ft: float = Field(gt=0)
+    hp: float | None = None
+    make_model: str | None = None
+    intake_depth_ft: float | None = None
+
+
+class LogRecord(BaseModel):
+    type: Literal["resistivity", "induction", "sp", "gamma", "spectral_gamma", "caliper", "sonic", "other"]
+    curves: list[str] = []
+    top_ft: float = 0
+    bottom_ft: float = Field(gt=0)
+    date: str | None = None
+    las_file: str | None = None
+    pdf_file: str | None = None
+    open_hole: bool = True
+    casing_at_log: Literal["open", "steel", "pvc"] = "open"
+    contractor: str | None = None
+
+
+class TestStep(BaseModel):
+    rate_gpm: float = Field(gt=0)
+    duration_min: float = Field(gt=0)
+
+
+class ObservationWell(BaseModel):
+    id: str
+    distance_ft: float = Field(gt=0)
+
+
+class AquiferTest(BaseModel):
+    id: str
+    kind: Literal["constant_rate", "step", "recovery"]
+    rate_gpm: float | None = Field(default=None, gt=0)
+    steps: list[TestStep] = []
+    start: str | None = None
+    duration_min: float | None = Field(default=None, gt=0)
+    data_file: str
+    r_w_ft: float = Field(gt=0)
+    observation_well: ObservationWell | None = None
+    swl_ft: float | None = None       # static level before this test (defaults to as_built.static_water_level_ft)
+    notes: str | None = None
+
+    @model_validator(mode="after")
+    def _kind(self):
+        if self.kind == "constant_rate" and self.rate_gpm is None:
+            raise ValueError(f"test {self.id}: constant_rate test needs rate_gpm")
+        if self.kind == "step" and len(self.steps) < 2:
+            raise ValueError(f"test {self.id}: step test needs at least two steps")
+        if self.kind == "recovery" and self.rate_gpm is None:
+            raise ValueError(f"test {self.id}: recovery test needs the rate_gpm of the preceding pumping period")
+        return self
+
+
+class FieldParam(BaseModel):
+    time: str
+    sc_us_cm: float | None = None
+    temp_c: float | None = None
+    ph: float | None = None
+    source: str | None = None
+
+
+class AsBuiltConstruction(BaseModel):
+    total_depth_ft: float = Field(gt=0)
+    borehole: list[BoreholeInterval] = []
+    casing: list[CasingInterval] = []
+    blank_liner: list[CasingInterval] = []
+    screen: list[ScreenInterval] = []
+    cement: list[CementInterval] = []
+    filter_pack: list[Interval] = []
+    packer_depth_ft: float | None = None
+    lithology: list[LithologyInterval] = []
+
+    @model_validator(mode="after")
+    def _geom(self):
+        for s in self.screen:
+            if s.bottom_ft > self.total_depth_ft + 1e-6:
+                raise ValueError("as-built screen extends below total depth")
+        for bl in self.blank_liner:
+            for s in self.screen:
+                if bl.top_ft < s.bottom_ft and s.top_ft < bl.bottom_ft:
+                    raise ValueError("blank liner overlaps a screen interval")
+        return self
+
+
+class PreDrillingReference(BaseModel):
+    title: str | None = None
+    date: str | None = None
+    analysis_json: str | None = None   # path to the pre-drilling build/analysis.json for comparison
+
+
+class AsBuilt(BaseModel):
+    well_id: str
+    completion_date: str | None = None
+    tdlr_tracking_no: str | None = None
+    driller: str | None = None
+    construction: AsBuiltConstruction
+    static_water_level_ft: float
+    swl_date: str | None = None
+    pump: PumpSpec
+    logs: list[LogRecord] = []
+    tests: list[AquiferTest] = []
+    field_params: list[FieldParam] = []
+    rerun_interference: bool = True
+    s_source: Literal["gam", "test"] = "gam"
+    pre_drilling_report: PreDrillingReference | None = None
+
+
 class Intake(BaseModel):
     schema_version: int = 1
-    mode: Literal["lsgcd_pre_drilling", "feasibility"] = "lsgcd_pre_drilling"
+    mode: Literal["lsgcd_pre_drilling", "feasibility", "lsgcd_post_drilling"] = "lsgcd_pre_drilling"
     report: ReportMeta
     applicant: Applicant
     district: DistrictRef
@@ -279,9 +392,15 @@ class Intake(BaseModel):
     permit: Permit
     analysis: AnalysisConfig = AnalysisConfig()
     data: DataFiles = DataFiles()
+    as_built: AsBuilt | None = None
 
     @model_validator(mode="after")
     def _cross(self):
+        if self.mode == "lsgcd_post_drilling":
+            if self.as_built is None:
+                raise ValueError("mode lsgcd_post_drilling requires an as_built block")
+            if self.as_built.well_id not in {w.id for w in self.proposed_wells}:
+                raise ValueError(f"as_built.well_id {self.as_built.well_id} is not a proposed well")
         names = {a.name for a in self.aquifers}
         for w in list(self.proposed_wells) + list(self.existing_wells):
             if w.aquifer not in names:

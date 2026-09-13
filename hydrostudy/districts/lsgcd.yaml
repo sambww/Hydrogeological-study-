@@ -122,3 +122,41 @@ checklist:
     text: Tabulated 24-hour and maximum-production impacts on registered/permitted wells within the search radius.
     evidence: [table_impacts_well, table_impacts_system]
     auto: true
+checklist_post:
+  - id: III.1(a)
+    text: Geophysical logs with a resistivity or induction curve and a spontaneous potential or gamma ray curve at a minimum.
+    evidence: [logs_min_curves]
+    auto: true
+  - id: III.1(b)
+    text: Logs performed in the initial open borehole (resistivity with SP and gamma ray at a minimum).
+    evidence: [logs_open_hole]
+    auto: true
+  - id: III.1(c)
+    text: Wells cased with PVC require induction and gamma ray logs.
+    evidence: [logs_pvc]
+    auto: true
+  - id: III.1(d)
+    text: Digital log files submitted in LAS format as well as printed.
+    evidence: [logs_las]
+    auto: true
+  - id: III.2
+    text: All public water supply sampling completed in accordance with TCEQ/EPA requirements submitted to the District.
+    evidence: [lab_results]
+    auto: false
+    professional: Confirm the TCEQ-required sampling suite is complete and attached.
+  - id: III.3
+    text: Digital or tabulated water levels measured during the drawdown, specific-capacity or aquifer test, with an estimate of specific capacity and transmissivity.
+    evidence: [test_data, sc_and_t]
+    auto: true
+  - id: III.4
+    text: Table of aquifer conditions and well and pump parameters (static water level and date, screen and blank liner diameters and depths, top of first screen, total depth, pump diameter and setting).
+    evidence: [table_asbuilt]
+    auto: true
+  - id: III.5
+    text: Field parameters (specific conductivity, temperature, pH) measured during the test or sampling.
+    evidence: [field_params]
+    auto: true
+  - id: III.6
+    text: Laboratory analyses of samples collected after construction and development.
+    evidence: [lab_results]
+    auto: true
