@@ -2,9 +2,11 @@ name: CI
 
 # The examples are transcriptions of District-accepted submittals and the tests assert the pipeline still reproduces
 # them. That baseline is only worth having if it runs without being remembered.
+# Pull requests cover every feature branch, and pushes cover the default branch. Running on both for all branches
+# would double every check while a pull request is open.
 on:
   push:
-    branches: ["**"]
+    branches: [main]
   pull_request:
 
 jobs:
