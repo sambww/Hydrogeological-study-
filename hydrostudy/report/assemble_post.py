@@ -11,7 +11,7 @@ from hydrostudy.report.context import scenario_groups
 from hydrostudy.report.context_post import build_post_context
 from hydrostudy.report.docx_builder import PLACEHOLDER_RE, DocBuilder
 from hydrostudy.report.equations import render_equations
-from hydrostudy.report.lint import lint_sections, numbers_in
+from hydrostudy.report.lint import allowed_number_set, lint_sections, numbers_in
 from hydrostudy.report.pdf import convert_to_pdf
 
 
@@ -37,6 +37,9 @@ def build_post_report(project, pdf: bool = True, strict_lint: bool = True) -> di
     lint = lint_sections(sections, ctx, extra)
     if strict_lint and not lint["ok"]:
         raise LintError(f"narrative contains numbers not present in the computed context: {lint['problems']}")
+    # Carried out with the artifacts for the review sheet, exactly as the pre-drilling assembler does. Without it the
+    # sheet loads an empty allowed set and flags every figure a reviewer types on a post-drilling report.
+    allowed_numbers = sorted(allowed_number_set(ctx, extra))
 
     intake, review = project.intake, project.review
     figs, fn, tn = ctx["figures"], ctx["fignum"], ctx["tabnum"]
@@ -166,4 +169,5 @@ def build_post_report(project, pdf: bool = True, strict_lint: bool = True) -> di
     doc.save(out_docx)
     out_pdf = convert_to_pdf(out_docx) if pdf else None
     return {"docx": str(out_docx), "pdf": str(out_pdf) if out_pdf else None, "placeholders": placeholders,
-            "lint": lint, "figures": len(fn), "tables": len(tn), "sections": list(sections.keys())}
+            "lint": lint, "allowed_numbers": allowed_numbers, "figures": len(fn), "tables": len(tn),
+            "sections": list(sections.keys())}

@@ -80,6 +80,14 @@ def cooper_jacob_fit(t_min, s_ft, q_gpm: float, r_ft: float, s_guess: float, obs
         return CooperJacobFit(None, None, "invalid fit", None, None, None, 0, n_total, None, None, False, notes + ["fit did not converge"])
     lt = np.log10(t[mask])
     slope, intercept = np.polyfit(lt, s[mask], 1)
+    if not np.isfinite(slope) or slope <= 0:
+        notes.append("non-positive slope on the selected points; data not consistent with a pumping response")
+        return CooperJacobFit(None, None, "invalid fit", None if not np.isfinite(slope) else float(slope),
+                              None, None, int(mask.sum()), n_total, None, None, False, notes)
+    # The loop ends with `T` derived from the mask of the previous pass while `mask` has already moved on, so the
+    # reported transmissivity has to be recomputed from the slope of the points actually reported. Otherwise T,
+    # slope, n_used and u_max describe different sets of points, and it is T that gets adopted as the well's value.
+    T = 2.303 * q_cfd / (4 * math.pi * slope)
     pred = slope * lt + intercept
     ss_res = float(np.sum((s[mask] - pred) ** 2))
     ss_tot = float(np.sum((s[mask] - s[mask].mean()) ** 2))
@@ -163,9 +171,15 @@ def recovery_fit(t_since_start_min, t_since_stop_min, residual_s_ft, q_gpm: floa
     if len(t) < 4:
         return RecoveryFit(None, None, None, len(t), False, ["insufficient data"])
     x = np.log10(t / tp)
+    if np.ptp(x) <= 0:
+        # Every t/t' identical, which means the stop time was not known. A polyfit here returns NaN, and NaN
+        # survives the slope test below, so the caller would adopt a NaN transmissivity.
+        return RecoveryFit(None, None, None, len(t), False,
+                           ["t/t' does not vary; the time pumping stopped could not be established"])
     slope, intercept = np.polyfit(x, sp, 1)
-    if slope <= 0:
-        return RecoveryFit(None, float(slope), None, len(t), False, ["non-positive slope"])
+    if not np.isfinite(slope) or slope <= 0:
+        return RecoveryFit(None, None if not np.isfinite(slope) else float(slope), None, len(t), False,
+                           ["non-positive slope" if np.isfinite(slope) else "fit did not produce a finite slope"])
     pred = slope * x + intercept
     ss_res = float(np.sum((sp - pred) ** 2))
     ss_tot = float(np.sum((sp - sp.mean()) ** 2))

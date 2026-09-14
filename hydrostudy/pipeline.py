@@ -74,10 +74,22 @@ class Project:
         for w in intake.all_wells:
             entry = {"ft": w.nearest_property_boundary_ft, "source": "intake" if w.nearest_property_boundary_ft is not None else None}
             if self.boundary_geom is not None:
+                from shapely.geometry import Point
+
                 from hydrostudy.geo.geometry import distance_to_boundary_ft
                 d = distance_to_boundary_ft(*intake._local_xy[w.id], self.boundary_geom)
+                inside = self.boundary_geom.contains(Point(*intake._local_xy[w.id]))
                 entry["polygon_ft"] = d
-                if w.nearest_property_boundary_ft is None:
+                entry["inside_boundary"] = bool(inside)
+                if not inside:
+                    # The polygon is the applicant's tract. A well outside it (an existing system well on another
+                    # parcel) is not that distance from its own property line, and filling it in would feed a
+                    # meaningless figure into the boundary drawdown.
+                    boundary_flags.append({
+                        "level": "warn", "code": "WELL_OUTSIDE_BOUNDARY",
+                        "text": f"{w.label} lies outside the supplied property polygon ({d:,.0f} ft from its edge); "
+                                "its distance to its own property line must be supplied in the intake."})
+                elif w.nearest_property_boundary_ft is None:
                     w.nearest_property_boundary_ft = d
                     entry.update({"ft": d, "source": "boundary polygon"})
                 elif w.nearest_property_boundary_ft > 0 and abs(d - w.nearest_property_boundary_ft) / w.nearest_property_boundary_ft > 0.10:
@@ -94,9 +106,22 @@ class Project:
             as_built = analyze_as_built(self, pre_params)
             if as_built["rerun_interference"] and as_built["adopted"]["t_ft2d"]:
                 aq = as_built["aquifer"]
-                review.decisions.t_ft2d = dict(review.decisions.t_ft2d or {}) | {aq: as_built["adopted"]["t_ft2d"]}
-                if as_built["adopted"]["s_source"] != "GAM (pre-drilling value)":
-                    review.decisions.s = dict(review.decisions.s or {}) | {aq: as_built["adopted"]["s"]}
+                # The measured value seeds the decision; an explicit reviewer decision still wins, because that is
+                # what `decisions` is for. Merging the other way round silently dropped their number while the
+                # report went on claiming a reviewer override had been applied.
+                for field, value in (("t_ft2d", as_built["adopted"]["t_ft2d"]),
+                                     ("s", as_built["adopted"]["s"] if
+                                      as_built["adopted"]["s_source"] != "GAM (pre-drilling value)" else None)):
+                    if value is None:
+                        continue
+                    current = dict(getattr(review.decisions, field) or {})
+                    if aq in current:
+                        boundary_flags.append({
+                            "level": "review", "code": "ASBUILT_VALUE_NOT_ADOPTED",
+                            "text": f"{aq}: the reviewer's {field} decision is used in place of the value measured at "
+                                    f"well {as_built['well_id']}; the measured value is reported for comparison only."})
+                        continue
+                    setattr(review.decisions, field, {aq: value} | current)
         aquifer_params = resolve_params(intake, review, gam)
 
         # search radius = max(1/2 mile, largest required spacing radius among proposed wells)

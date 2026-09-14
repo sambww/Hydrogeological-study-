@@ -64,3 +64,40 @@ def test_geojson_report_builds(geo_project):
     result = p.run_report(pdf=False)
     assert result["lint"]["ok"]
     assert all(i["status"] == "satisfied" for i in p.artifacts["checklist"]["items"] if i["id"] in ("II.B.2(c)", "II.B.3(i)"))
+
+
+def test_a_well_outside_the_tract_gets_no_boundary_distance_from_the_polygon(tmp_path):
+    """The polygon is the applicant's tract. A well on another parcel is not that far from its own property line.
+
+    Filling it in anyway fed a meaningless figure straight into the boundary drawdown reported for that well.
+    """
+    dst = tmp_path / "outside"
+    shutil.copytree(ROOT / "examples" / "black_oak_well_2", dst, ignore=shutil.ignore_patterns("build"))
+    write_fixtures(dst, 30.170167, -95.578097)
+    man = yaml.safe_load((dst / "data" / "manifest.yaml").read_text())
+    man.setdefault("files", {})["boundary"] = {"path": "boundary.geojson", "source": "fixture", "retrieved": "2026-09"}
+    man["hydrography_notes"] = []
+    man["springs"] = {"searched": True, "source": "fixture", "found": []}
+    (dst / "data" / "manifest.yaml").write_text(yaml.safe_dump(man, sort_keys=False))
+
+    intake = yaml.safe_load((dst / "intake.yaml").read_text())
+    intake["site"]["boundary_geojson"] = "data/boundary.geojson"
+    intake["site"]["nearest_boundary_distance_ft"] = None
+    intake["proposed_wells"][0]["nearest_property_boundary_ft"] = None
+    # Put the existing system well roughly half a mile north, well off the tract, with no stated distance.
+    intake["existing_wells"][0]["lat"] = 30.177500
+    intake["existing_wells"][0]["nearest_property_boundary_ft"] = None
+    (dst / "intake.yaml").write_text(yaml.safe_dump(intake, sort_keys=False))
+
+    p = Project(dst)
+    p.run_analysis()
+    bd = p.artifacts["geo"]["boundary_distances"]
+
+    assert bd["W2"]["inside_boundary"] is True
+    assert bd["W2"]["source"] == "boundary polygon"
+
+    assert bd["W1"]["inside_boundary"] is False
+    assert bd["W1"]["source"] is None, "an off-tract well must not inherit this tract's boundary distance"
+    assert bd["W1"]["ft"] is None
+    assert "polygon_ft" in bd["W1"], "the measured distance is still reported, just not adopted"
+    assert "WELL_OUTSIDE_BOUNDARY" in [f["code"] for f in p.artifacts["flags"]]

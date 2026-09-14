@@ -26,14 +26,24 @@ class TestSeries:
 
     def pumping(self):
         if self.phase is None:
-            return self
+            if self.t_since_stop_min is None:
+                return self
+            # Mirror `recovery()`: rows marked only by t_since_stop_min must be excluded here, or recovery data
+            # would be fitted as part of the drawdown curve.
+            m = ~(np.isfinite(self.t_since_stop_min) & (self.t_since_stop_min > 0))
+            return self._subset(m)
         m = np.array([str(p).lower() != "recovery" for p in self.phase])
         return self._subset(m)
 
     def recovery(self):
         if self.phase is None:
-            return None
-        m = np.array([str(p).lower() == "recovery" for p in self.phase])
+            # `phase` is documented as optional, so a recovery series identified only by t_since_stop_min must still
+            # be found; otherwise the test silently goes unanalysed and the report says it could not be analysed.
+            if self.t_since_stop_min is None:
+                return None
+            m = np.isfinite(self.t_since_stop_min) & (self.t_since_stop_min > 0)
+        else:
+            m = np.array([str(p).lower() == "recovery" for p in self.phase])
         return self._subset(m) if m.any() else None
 
     def _subset(self, m):

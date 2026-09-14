@@ -57,7 +57,9 @@ def analyze_as_built(project, pre_params: dict) -> dict:
         "has_res_or_induction": bool(types & {"resistivity", "induction"}),
         "has_sp_or_gamma": bool(types & {"sp", "gamma", "spectral_gamma"}),
         "has_open_hole": any(lg.open_hole for lg in ab.logs),
-        "pvc_ok": (not any(c.material.lower() == "pvc" for c in ab.construction.casing)) or ({"induction", "gamma"} <= types),
+        # Material is free text from the driller ("PVC SDR-17", "Sch 40 PVC"), so an exact match would let a
+        # PVC-cased well past the Section III.1(c) induction-and-gamma requirement and report it as addressed.
+        "pvc_ok": (not any("pvc" in (c.material or "").lower() for c in ab.construction.casing)) or ({"induction", "gamma"} <= types),
         "all_las_present": bool(ab.logs) and all(r["las_present"] for r in logs),
         "n_logs": len(ab.logs),
     }
@@ -93,9 +95,19 @@ def analyze_as_built(project, pre_params: dict) -> dict:
                     flags.append({"level": "warn", "code": "RATE_VARIATION", "text": f"Test {t.id}: pumping rate varied by more than 5%; constant-rate analysis is approximate."})
             rc = series.recovery()
             if rc is not None and rc.n:
-                t_stop = float(pu.elapsed_min[-1]) if pu.n else (t.duration_min or 0.0)
-                tss = rc.t_since_stop_min if rc.t_since_stop_min is not None else rc.elapsed_min - t_stop
-                rec["recovery"] = _asdict(recovery_fit(rc.elapsed_min, tss, rc.drawdown_ft, t.rate_gpm))
+                if rc.t_since_stop_min is not None:
+                    tss = rc.t_since_stop_min
+                else:
+                    # Without a stop time every t/t' would be identical and the fit meaningless, so say that rather
+                    # than defaulting to zero and adopting whatever comes back.
+                    t_stop = float(pu.elapsed_min[-1]) if pu.n else t.duration_min
+                    tss = None if not t_stop else rc.elapsed_min - t_stop
+                if tss is None:
+                    flags.append({"level": "warn", "code": "RECOVERY_STOP_UNKNOWN",
+                                  "text": f"Test {t.id}: recovery rows carry no t_since_stop_min and the pumping "
+                                          "duration is not recorded, so the recovery analysis was skipped."})
+                else:
+                    rec["recovery"] = _asdict(recovery_fit(rc.elapsed_min, tss, rc.drawdown_ft, t.rate_gpm))
         if t.kind == "step":
             ends = []
             cum = 0.0

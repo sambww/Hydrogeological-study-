@@ -3,6 +3,7 @@ import shutil
 
 import numpy as np
 import pytest
+import yaml
 from docx import Document
 
 from hydrostudy.analysis.pumptest import (
@@ -154,3 +155,91 @@ def test_pre_drilling_reference_ignores_review_overrides(tmp_path_factory):
     p = _P(root / "p")
     p.run_analysis()
     assert p.artifacts["as_built"]["comparison"]["t_pre_ft2d"] == 1023
+
+
+# --------------------------------------------------------------- compliance and override behaviour
+
+def test_pvc_casing_is_recognised_from_a_drillers_free_text_material(post_built):
+    """Section III.1(c) requires induction and gamma for PVC. "PVC SDR-17" must not slip past as not-PVC."""
+    from hydrostudy.analysis.aquifer_params import resolve_params
+    from hydrostudy.analysis.asbuilt import analyze_as_built
+    from hydrostudy.pipeline import Project
+
+    p, _ = post_built
+    intake = yaml.safe_load((p.dir / "intake.yaml").read_text(encoding="utf-8"))
+    intake["as_built"]["construction"]["casing"][0]["material"] = "PVC SDR-17"
+    # Drop the induction/gamma logs so the requirement actually bites.
+    intake["as_built"]["logs"] = [lg for lg in intake["as_built"]["logs"]
+                                  if lg["type"] not in ("induction", "gamma", "spectral_gamma")]
+    alt = p.dir.parent / "pvc_case"
+    shutil.copytree(p.dir, alt, ignore=shutil.ignore_patterns("build"))
+    (alt / "intake.yaml").write_text(yaml.safe_dump(intake, sort_keys=False), encoding="utf-8")
+
+    q = Project(alt)
+    ab = analyze_as_built(q, resolve_params(q.intake, q.review, None, apply_review=False))
+    assert ab["logs"]["pvc_ok"] is False
+
+
+def test_a_reviewer_decision_beats_the_measured_as_built_value(post_built):
+    """`decisions` is the reviewer's authority. The measured value seeds it; it must not overwrite it."""
+    from hydrostudy.pipeline import Project
+
+    p, _ = post_built
+    alt = p.dir.parent / "override_case"
+    shutil.copytree(p.dir, alt, ignore=shutil.ignore_patterns("build"))
+    review = yaml.safe_load((alt / "review.yaml").read_text(encoding="utf-8")) or {}
+    review.setdefault("decisions", {})["t_ft2d"] = {"Evangeline": 2500.0}
+    (alt / "review.yaml").write_text(yaml.safe_dump(review, sort_keys=False), encoding="utf-8")
+
+    q = Project(alt)
+    q.run_analysis()
+    params = q.artifacts["analysis"]["aquifer_params"]["Evangeline"]
+    assert params["t_ft2d"] == pytest.approx(2500.0)
+    codes = [f["code"] for f in q.artifacts["flags"]]
+    assert "ASBUILT_VALUE_NOT_ADOPTED" in codes, "the discarded measured value must be reported, not silent"
+
+
+def test_post_report_exports_the_allowed_numbers_for_the_review_sheet(post_built):
+    """Without this the review sheet loads an empty set and flags every figure a reviewer types."""
+    _, result = post_built
+    assert result["allowed_numbers"]
+    assert all(isinstance(x, str) for x in result["allowed_numbers"])
+
+
+def test_the_comparison_table_names_the_well(post_built):
+    p, _ = post_built
+    from hydrostudy.report.context_post import build_post_context
+    ctx = build_post_context(p)
+    rows = ctx["ab"]["comparison_rows"]
+    if rows:
+        assert all(r[1] and r[1] != "{}" for r in rows)
+
+
+def test_the_interference_narrative_only_claims_storativity_is_unchanged_when_it_is():
+    """A test-derived storativity is substituted into the re-run, so the wording must follow what actually changed."""
+    from jinja2 import Environment, StrictUndefined
+
+    from hydrostudy.report.assemble import _template
+
+    tpl = Environment(undefined=StrictUndefined, autoescape=False).from_string(_template("post_interference.j2"))
+    base = {"well_label": "Well No. 2", "adopted_t": "1,021", "pre_t": "1,023", "adopted_s": "2.10 x 10-4"}
+    tab = {"comparison": "Table 7"}
+
+    held = tpl.render(tab=tab, ab={**base, "s_substituted": False,
+                                   "unchanged_inputs": "storativity, rates, annual volume and well locations"})
+    assert "storativity, rates" in held
+    assert "derived from the aquifer test" not in held
+
+    swapped = tpl.render(tab=tab, ab={**base, "s_substituted": True,
+                                      "unchanged_inputs": "rates, annual volume and well locations"})
+    assert "derived from the aquifer test" in swapped
+    assert "(storativity" not in swapped
+
+
+def test_the_context_reports_storativity_as_held_for_a_single_well_test(post_built):
+    p, _ = post_built
+    from hydrostudy.report.context_post import build_post_context
+    ab = build_post_context(p)["ab"]
+    # This example's single-well test cannot yield storativity, so the pre-drilling value stands.
+    assert ab["s_substituted"] is False
+    assert "storativity" in ab["unchanged_inputs"]

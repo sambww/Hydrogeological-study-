@@ -188,7 +188,7 @@ def build_post_context(project) -> dict:
             if pre:
                 before = next((p["pumped"] for p in pre["scenarios"] if p["key"] == sc["key"]), None)
             for wid, val in now.items():
-                nm = ctx["fig"] and next((w.label for w in intake.all_wells if w.id == wid), wid)
+                nm = next((w.label for w in intake.all_wells if w.id == wid), wid)
                 comp_rows.append([sc["title"], nm, fmt_ft(before[wid]) if before and wid in before else "N/A", fmt_ft(val)])
     rerun_summary = ""
     if ab["rerun_interference"] and comp_rows:
@@ -208,6 +208,12 @@ def build_post_context(project) -> dict:
         "test_header": ["Test", "Type", "Rate (gpm)", "Duration (min)", "End drawdown (ft)", "Specific capacity (gpm/ft)", "T, Cooper-Jacob (ft2/day)", "T, Theis match (ft2/day)", "T, recovery (ft2/day)", "Well efficiency at design rate"],
         "adopted_sentence": adopted_sentence, "comparison_sentence": comparison_sentence,
         "adopted_t": fmt_int(ad["t_ft2d"]) if ad["t_ft2d"] else "N/A", "pre_t": fmt_int(cp["t_pre_ft2d"]) if cp else "N/A",
+        # The re-run narrative may only claim storativity is unchanged when it actually is: a test-derived value is
+        # substituted into the scenarios alongside the measured transmissivity.
+        "s_substituted": ad["s_source"] != "GAM (pre-drilling value)",
+        "unchanged_inputs": ("rates, annual volume and well locations" if ad["s_source"] != "GAM (pre-drilling value)"
+                             else "storativity, rates, annual volume and well locations"),
+        "adopted_s": fmt_sci(ad["s"]) if ad["s"] is not None else "N/A",
         "field_rows": field_rows, "field_sentence": field_sentence, "field_header": ["Time", "Specific conductance (uS/cm)", "Temperature (C)", "pH", "Source"],
         "comparison_rows": comp_rows, "comparison_header": ["Scenario", "Well", "Pre-drilling drawdown (ft)", "As-built drawdown (ft)"],
         "rerun_summary_sentence": rerun_summary, "summary_sentence": summary_sentence,

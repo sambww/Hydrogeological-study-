@@ -9,6 +9,16 @@ from hydrostudy.figures.style import plt, save
 from hydrostudy.units import MIN_PER_DAY
 
 
+def evaluation_radius(test: dict) -> float:
+    """The radius a test's fit was made at: the observation well's distance when there is one, else the well radius.
+
+    A fitted curve drawn at any other radius misses the data it is supposed to match, and the figure goes in the
+    report as evidence of the fit.
+    """
+    obs = test.get("observation_well")
+    return float(obs["distance_ft"]) if obs else float(test["r_w_ft"])
+
+
 def _pumping_points(test: dict):
     t = np.array(test["series"]["elapsed_min"], dtype=float)
     s = np.array(test["series"]["drawdown_ft"], dtype=float)
@@ -47,7 +57,8 @@ def render_theis_match(test: dict, path):
     t, s = _pumping_points(test)
     ax.loglog(t, s, "o", ms=3.5, color="#555", label="Measured drawdown")
     x = np.logspace(np.log10(t.min()), np.log10(t.max()), 100)
-    ax.loglog(x, theis_drawdown(test["rate_gpm"], tf["t_ft2d"], tf["s"], test["r_w_ft"], x / MIN_PER_DAY), "-", color="#1f77b4",
+    ax.loglog(x, theis_drawdown(test["rate_gpm"], tf["t_ft2d"], tf["s"], evaluation_radius(test), x / MIN_PER_DAY),
+              "-", color="#1f77b4",
               label=f"Theis fit: T = {tf['t_ft2d']:,.0f} ft2/day, S = {tf['s']:.2e}{' (fixed)' if tf['s_fixed'] else ''}")
     ax.set_xlabel("Elapsed time (min)")
     ax.set_ylabel("Drawdown (ft)")
