@@ -2,7 +2,8 @@
 
 First time on a machine: follow `docs/RUNBOOK.md` section A (setup and `hydrostudy doctor`).
 
-1. **Scaffold** `hydrostudy new projects/<slug>` (copies the example intake, review and manifest).
+1. **Scaffold** `hydrostudy new projects/<slug>` (copies the example intake, review and manifest), or fill the web
+   intake sheet and run `hydrostudy import-intake projects/<slug> <submission>.json` (see `docs/RUNBOOK.md` section H).
 2. **Fill `intake.yaml`** (driller's inputs):
    - applicant, PWS name and ID, county, district (`lsgcd` or `generic`)
    - each proposed well: coordinates (decimal or DMS), ground elevation, aquifer, max rate (gpm), total depth,

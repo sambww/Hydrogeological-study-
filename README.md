@@ -16,6 +16,8 @@ Quick start:
 python -m venv .venv && .venv/bin/pip install -e .[dev]
 .venv/bin/hydrostudy doctor --network               # environment and data-host checks
 .venv/bin/hydrostudy new projects/my_well          # scaffold from the example
+# or fill the web intake sheet (web/intake_form.html, published as an Artifact) and import its submission:
+.venv/bin/hydrostudy import-intake projects/my_well submission.json
 # edit projects/my_well/intake.yaml, review.yaml and data/*.csv (see docs/WORKFLOW.md and docs/DATA_SOURCES.md)
 .venv/bin/hydrostudy validate projects/my_well
 .venv/bin/hydrostudy run projects/my_well

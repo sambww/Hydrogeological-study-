@@ -1,0 +1,1563 @@
+<title>Well Intake Sheet</title>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@500;600;700&family=IBM+Plex+Mono:wght@400;500&family=Source+Sans+3:ital,wght@0,400;0,600;1,400&display=swap">
+<style>
+:root{
+  --ground:#F4F7F9; --surface:#FFFFFF; --sunk:#E9F0F4;
+  --ink:#14212B; --muted:#5C7180; --line:#D3DEE6; --line-strong:#B4C5D1;
+  --accent:#0B6E77; --accent-soft:#DBECEE; --accent-ink:#FFFFFF;
+  --warn:#8F5205; --bad:#A32217; --good:#1C6739;
+  --steel:#76858F; --sand:#C0A05A; --clay:#9C8674; --grout:#8E9BA4;
+  --sans:"Source Sans 3",-apple-system,Segoe UI,Roboto,sans-serif;
+  --cond:"Barlow Condensed","Source Sans 3",Segoe UI,sans-serif;
+  --mono:"IBM Plex Mono",ui-monospace,SFMono-Regular,Menlo,monospace;
+  --r:4px;
+}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){
+  --ground:#0B1216; --surface:#141E25; --sunk:#1B272F;
+  --ink:#E3ECF1; --muted:#94A8B4; --line:#24333C; --line-strong:#364A56;
+  --accent:#47B4BD; --accent-soft:#113035; --accent-ink:#06181B;
+  --warn:#D9973F; --bad:#E8776C; --good:#5DB77F;
+  --steel:#8C9AA4; --sand:#C9AC68; --clay:#A89380; --grout:#7E8C96;
+}}
+:root[data-theme="dark"]{
+  --ground:#0B1216; --surface:#141E25; --sunk:#1B272F;
+  --ink:#E3ECF1; --muted:#94A8B4; --line:#24333C; --line-strong:#364A56;
+  --accent:#47B4BD; --accent-soft:#113035; --accent-ink:#06181B;
+  --warn:#D9973F; --bad:#E8776C; --good:#5DB77F;
+  --steel:#8C9AA4; --sand:#C9AC68; --clay:#A89380; --grout:#7E8C96;
+}
+*{box-sizing:border-box}
+body{background:var(--ground);color:var(--ink);font:400 15px/1.5 var(--sans);margin:0}
+h1,h2,h3{font-family:var(--cond);text-wrap:balance;margin:0;letter-spacing:.01em}
+.shell{display:grid;grid-template-columns:minmax(0,1fr)}
+@media(min-width:1020px){.shell{grid-template-columns:268px minmax(0,1fr);align-items:start}}
+
+/* ---- rail ---- */
+.rail{padding:20px 16px;padding-block:20px;border-bottom:1px solid var(--line);background:var(--surface)}
+@media(min-width:1020px){.rail{position:sticky;top:0;max-height:100vh;overflow-y:auto;border-bottom:0;border-right:1px solid var(--line)}}
+.brand{font-family:var(--cond);font-weight:700;font-size:19px;line-height:1.1;letter-spacing:.02em}
+.brand span{display:block;font-family:var(--mono);font-size:10.5px;font-weight:400;letter-spacing:.1em;text-transform:uppercase;color:var(--muted);margin-top:5px}
+.nav{display:flex;flex-direction:column;gap:1px;margin:18px 0}
+.nav a{display:flex;justify-content:space-between;gap:8px;align-items:baseline;padding:6px 8px;border-radius:var(--r);color:var(--ink);text-decoration:none;font-size:14px}
+.nav a:hover{background:var(--sunk)}
+.nav a .n{font-family:var(--mono);font-size:11px;color:var(--muted)}
+.nav a .bad{color:var(--bad);font-weight:600}
+.meter{border:1px solid var(--line);border-radius:var(--r);padding:11px 12px;background:var(--sunk);display:grid;gap:9px}
+.meter div{display:flex;justify-content:space-between;gap:10px;align-items:baseline}
+.meter dt{font-family:var(--mono);font-size:10.5px;letter-spacing:.07em;text-transform:uppercase;color:var(--muted)}
+.meter dd{margin:0;font-family:var(--mono);font-size:14px;font-variant-numeric:tabular-nums}
+.acts{display:grid;gap:7px;margin-top:16px}
+button{font:600 14px/1 var(--sans);border-radius:var(--r);border:1px solid var(--line-strong);background:var(--surface);color:var(--ink);padding:9px 12px;cursor:pointer}
+button:hover{border-color:var(--accent)}
+button.primary{background:var(--accent);border-color:var(--accent);color:var(--accent-ink)}
+button.primary:hover{filter:brightness(1.08)}
+button.mini{font-size:12.5px;padding:5px 9px;font-weight:400}
+button:focus-visible,input:focus-visible,select:focus-visible,textarea:focus-visible,a:focus-visible{outline:2px solid var(--accent);outline-offset:1px}
+.note{font-size:12.5px;color:var(--muted);margin-top:12px}
+
+/* ---- document ---- */
+.doc{padding:0 16px 64px;padding-block:0 64px;min-width:0}
+.masthead{padding:26px 0 18px;border-bottom:2px solid var(--ink);margin-bottom:26px}
+.masthead h1{font-size:clamp(26px,4.2vw,38px);font-weight:700}
+.masthead p{color:var(--muted);max-width:64ch;margin:9px 0 0}
+.kicker{font-family:var(--mono);font-size:10.5px;letter-spacing:.12em;text-transform:uppercase;color:var(--accent);margin-bottom:7px}
+section{margin:0 0 34px;scroll-margin-top:16px}
+.sechead{display:flex;flex-wrap:wrap;gap:2px 10px;align-items:baseline;border-bottom:1px solid var(--line);padding-bottom:6px;margin-bottom:14px}
+.sechead h2{font-size:21px;font-weight:600}
+.sechead .n{font-family:var(--mono);font-size:11px;color:var(--muted)}
+.sechead p{flex:1 1 100%;color:var(--muted);font-size:13.5px;margin:2px 0 0}
+.row{display:grid;gap:12px;grid-template-columns:repeat(auto-fit,minmax(168px,1fr));min-width:0}
+/* Grid and flex items default to min-width:auto, so a nested field grid's minimum track width would push the
+   page sideways on a phone. Everything that can hold a grid gets an explicit floor of zero. */
+.item,.grid,.split>*{min-width:0}
+@media(max-width:560px){.row{grid-template-columns:minmax(0,1fr)}}
+.field{display:grid;gap:4px;min-width:0}
+.field.wide{grid-column:1/-1}
+label{font-family:var(--mono);font-size:10.5px;letter-spacing:.06em;text-transform:uppercase;color:var(--muted)}
+label .req{color:var(--bad)}
+input,select,textarea{font:400 14.5px/1.35 var(--sans);color:var(--ink);background:var(--surface);border:1px solid var(--line-strong);border-radius:var(--r);padding:7px 8px;width:100%;min-width:0}
+input[type=number],input[data-num]{font-family:var(--mono);font-variant-numeric:tabular-nums}
+textarea{min-height:62px;resize:vertical}
+input.err,select.err{border-color:var(--bad);background:color-mix(in srgb,var(--bad) 7%,var(--surface))}
+.hint{font-size:12px;color:var(--muted)}
+.chk{display:flex;gap:8px;align-items:center;font-size:14px}
+.chk input{width:16px;height:16px;flex:none}
+
+/* ---- repeatable cards ---- */
+.item{border:1px solid var(--line);border-radius:var(--r);background:var(--surface);padding:14px;margin-bottom:12px}
+.itemhead{display:flex;justify-content:space-between;gap:10px;align-items:center;margin-bottom:12px}
+.itemhead h3{font-size:16px;font-weight:600}
+.itemhead .tag{font-family:var(--mono);font-size:11px;color:var(--muted)}
+.sub{font-family:var(--mono);font-size:10.5px;letter-spacing:.08em;text-transform:uppercase;color:var(--muted);margin:16px 0 6px;padding-top:10px;border-top:1px dashed var(--line)}
+.grid{overflow-x:auto}
+.grid table{border-collapse:collapse;width:100%;min-width:380px}
+.grid th{font-family:var(--mono);font-size:10px;letter-spacing:.06em;text-transform:uppercase;color:var(--muted);font-weight:400;text-align:left;padding:0 6px 4px}
+.grid td{padding:2px 6px 2px 0}
+.grid td:last-child{width:1%;padding-right:0}
+.split{display:grid;gap:16px}
+@media(min-width:760px){.split{grid-template-columns:minmax(0,1fr) 196px}}
+.schem{border:1px solid var(--line);border-radius:var(--r);background:var(--sunk);padding:10px}
+.schem figcaption{font-family:var(--mono);font-size:10px;letter-spacing:.06em;text-transform:uppercase;color:var(--muted);margin-bottom:6px}
+.schem svg{display:block;width:100%;height:auto;max-width:100%}
+.legend{display:flex;flex-wrap:wrap;gap:4px 12px;margin-top:8px;font-family:var(--mono);font-size:10px;color:var(--muted)}
+.legend i{display:inline-block;width:9px;height:9px;margin-right:4px;vertical-align:baseline}
+
+/* ---- review ---- */
+.issues{display:grid;gap:0;border:1px solid var(--line);border-radius:var(--r);overflow:hidden}
+.issues li{display:flex;gap:10px;padding:8px 11px;background:var(--surface);border-top:1px solid var(--line);font-size:13.5px;align-items:baseline}
+.issues li:first-child{border-top:0}
+.issues code{font-family:var(--mono);font-size:11.5px;color:var(--muted);white-space:nowrap}
+.issues.ok li{color:var(--good)}
+ul.issues{list-style:none;margin:0;padding:0}
+.banner{border:1px solid var(--warn);border-left-width:3px;border-radius:var(--r);background:color-mix(in srgb,var(--warn) 9%,var(--surface));padding:10px 12px;font-size:13.5px;margin-bottom:18px}
+.banner b{font-weight:600}
+pre.out{font-family:var(--mono);font-size:11.5px;background:var(--sunk);border:1px solid var(--line);border-radius:var(--r);padding:11px;overflow:auto;max-height:340px;margin:0}
+.toast{font-size:13px;padding:8px 10px;border-radius:var(--r);border:1px solid var(--line);background:var(--sunk);margin-top:10px}
+.toast.bad{border-color:var(--bad);color:var(--bad)}
+.toast.good{border-color:var(--good);color:var(--good)}
+@media(prefers-reduced-motion:reduce){*{animation:none!important;transition:none!important}}
+</style>
+
+<div class="shell">
+  <aside class="rail">
+    <div class="brand">Well Intake Sheet<span>Ballard Water Well</span></div>
+    <nav class="nav" id="nav"></nav>
+    <dl class="meter">
+      <div><dt>System rate</dt><dd id="m-rate">0 gpm</dd></div>
+      <div><dt>Report trigger</dt><dd id="m-trig">&mdash;</dd></div>
+      <div><dt>Wells</dt><dd id="m-wells">0</dd></div>
+      <div><dt>Open issues</dt><dd id="m-iss">0</dd></div>
+    </dl>
+    <div class="acts">
+      <button class="primary" id="b-submit">Send to Claude</button>
+      <button id="b-save">Save file</button>
+      <button class="mini" id="b-copy">Copy JSON</button>
+      <button class="mini" id="b-example">Load Black Oak example</button>
+      <button class="mini" id="b-clear">Clear sheet</button>
+    </div>
+    <div id="toast"></div>
+    <p class="note">Saved in this browser as you type. Nothing leaves the page until you send or save it.</p>
+  </aside>
+
+  <main class="doc">
+    <header class="masthead">
+      <div class="kicker">Lone Star GCD hydrogeological report</div>
+      <h1>Well intake sheet</h1>
+      <p>Everything the report generator needs about a proposed well and the system it joins. Depths are feet below
+         ground level, diameters inches, rates gallons per minute. Fill in what you know. The sheet flags what is missing
+         and what does not fit together.</p>
+    </header>
+    <div id="example-banner"></div>
+    <div id="form"></div>
+
+    <section id="sec-review">
+      <div class="sechead"><span class="n">7</span><h2>Review and send</h2>
+        <p>Checks run here as you type. They mirror the generator's own rules, which have the final say.</p></div>
+      <ul class="issues" id="issues"></ul>
+      <p class="sub">Submission payload</p>
+      <pre class="out" id="preview"></pre>
+    </section>
+  </main>
+</div>
+
+<script type="application/json" id="field-spec">[
+ {
+  "id": "report",
+  "n": "1",
+  "title": "Report and applicant",
+  "blurb": "Cover page and who is applying.",
+  "fields": [
+   {
+    "p": "report.title",
+    "label": "Report title",
+    "type": "text",
+    "req": true,
+    "wide": true
+   },
+   {
+    "p": "report.date",
+    "label": "Report date",
+    "type": "date",
+    "req": true
+   },
+   {
+    "p": "mode",
+    "label": "Report type",
+    "type": "select",
+    "opts": [
+     [
+      "lsgcd_pre_drilling",
+      "Pre-drilling (Section II.B)"
+     ],
+     [
+      "feasibility",
+      "Feasibility study"
+     ]
+    ]
+   },
+   {
+    "p": "report.issuing_firm",
+    "label": "Issuing firm",
+    "type": "select",
+    "opts": [
+     [
+      "ballard",
+      "Ballard Water Well"
+     ],
+     [
+      "reviewer",
+      "Reviewing firm"
+     ],
+     [
+      "generic",
+      "No letterhead"
+     ]
+    ]
+   },
+   {
+    "p": "report.revision.number",
+    "label": "Revision",
+    "type": "number",
+    "min": 1
+   },
+   {
+    "p": "report.revision.reason",
+    "label": "Revision reason",
+    "type": "text"
+   },
+   {
+    "p": "applicant.name",
+    "label": "Applicant",
+    "type": "text",
+    "req": true
+   },
+   {
+    "p": "applicant.system_name",
+    "label": "Water system",
+    "type": "text"
+   },
+   {
+    "p": "applicant.pws_name",
+    "label": "PWS name",
+    "type": "text"
+   },
+   {
+    "p": "applicant.pws_id",
+    "label": "PWS ID",
+    "type": "text",
+    "hint": "e.g. TX 1700851"
+   },
+   {
+    "p": "applicant.contact",
+    "label": "Contact",
+    "type": "text"
+   },
+   {
+    "p": "applicant.address",
+    "label": "Applicant address",
+    "type": "text",
+    "wide": true
+   }
+  ]
+ },
+ {
+  "id": "site",
+  "n": "2",
+  "title": "District and site",
+  "blurb": "Where the well is and who regulates it.",
+  "fields": [
+   {
+    "p": "district.id",
+    "label": "District",
+    "type": "select",
+    "opts": [
+     [
+      "lsgcd",
+      "Lone Star GCD"
+     ],
+     [
+      "generic",
+      "No district configured"
+     ]
+    ]
+   },
+   {
+    "p": "district.county",
+    "label": "County",
+    "type": "text",
+    "req": true
+   },
+   {
+    "p": "district.rules_version",
+    "label": "Rules version",
+    "type": "text"
+   },
+   {
+    "p": "district.verified_on",
+    "label": "Rules checked on",
+    "type": "date"
+   },
+   {
+    "p": "site.address",
+    "label": "Site address",
+    "type": "text",
+    "wide": true
+   },
+   {
+    "p": "site.description",
+    "label": "Site description",
+    "type": "text",
+    "wide": true
+   },
+   {
+    "p": "site.nearest_boundary_distance_ft",
+    "label": "Nearest property line",
+    "type": "number",
+    "unit": "ft"
+   },
+   {
+    "p": "site.boundary_distance_source",
+    "label": "Distance source",
+    "type": "text"
+   },
+   {
+    "p": "site.county_line_distance_mi",
+    "label": "To county line",
+    "type": "number",
+    "unit": "mi"
+   },
+   {
+    "p": "site.boundary_geojson",
+    "label": "Boundary GeoJSON",
+    "type": "text",
+    "hint": "path under data/, e.g. data/boundary.geojson"
+   },
+   {
+    "p": "site.parcel_ids",
+    "label": "Parcel IDs",
+    "type": "text",
+    "list": "str",
+    "hint": "comma separated"
+   }
+  ]
+ },
+ {
+  "id": "aquifers",
+  "n": "3",
+  "title": "Aquifers",
+  "blurb": "One block per aquifer any well in the system is completed in.",
+  "repeat": {
+   "path": "aquifers",
+   "label": "Aquifer",
+   "nameFrom": [
+    "name"
+   ],
+   "fields": [
+    {
+     "p": "name",
+     "label": "Aquifer",
+     "type": "select",
+     "req": true,
+     "opts": [
+      "Chicot",
+      "Evangeline",
+      "Burkeville",
+      "Jasper",
+      "Catahoula",
+      "Other"
+     ]
+    },
+    {
+     "p": "top_ft_bgl",
+     "label": "Top",
+     "type": "number",
+     "unit": "ft bgl"
+    },
+    {
+     "p": "bottom_ft_bgl",
+     "label": "Base",
+     "type": "number",
+     "unit": "ft bgl"
+    },
+    {
+     "p": "source",
+     "label": "Depth source",
+     "type": "text",
+     "wide": true
+    },
+    {
+     "p": "confinement.status",
+     "label": "Confinement",
+     "type": "select",
+     "opts": [
+      "confined",
+      "semi-confined",
+      "unconfined",
+      "unknown"
+     ]
+    },
+    {
+     "p": "confinement.confining_unit",
+     "label": "Confining unit",
+     "type": "text"
+    },
+    {
+     "p": "confinement.thickness_ft",
+     "label": "Confining thickness",
+     "type": "number",
+     "unit": "ft"
+    },
+    {
+     "p": "params.t_ft2d",
+     "label": "Transmissivity",
+     "type": "number",
+     "unit": "ft2/day"
+    },
+    {
+     "p": "params.s",
+     "label": "Storativity",
+     "type": "number",
+     "step": "any",
+     "hint": "e.g. 0.000336"
+    },
+    {
+     "p": "params.k_ftd",
+     "label": "Conductivity",
+     "type": "number",
+     "unit": "ft/day"
+    },
+    {
+     "p": "params.source.kind",
+     "label": "Parameter source",
+     "type": "select",
+     "opts": [
+      "gam",
+      "site_test",
+      "literature",
+      "district",
+      "driller",
+      "estimate"
+     ]
+    },
+    {
+     "p": "params.source.model_version",
+     "label": "Model version",
+     "type": "text",
+     "hint": "e.g. HAGM (Kasmarek, 2013)"
+    },
+    {
+     "p": "params.source.citation",
+     "label": "Citation",
+     "type": "area",
+     "wide": true
+    },
+    {
+     "p": "params.source.notes",
+     "label": "Parameter notes",
+     "type": "area",
+     "wide": true
+    },
+    {
+     "p": "lithology_summary",
+     "label": "Lithology summary",
+     "type": "area",
+     "wide": true
+    }
+   ],
+   "groups": [
+    {
+     "sub": "Nearby aquifer test (optional, used to derive transmissivity)",
+     "prefix": "site_test",
+     "fields": [
+      {
+       "p": "well_ref",
+       "label": "Tested well id",
+       "type": "text"
+      },
+      {
+       "p": "q_gpm",
+       "label": "Test rate",
+       "type": "number",
+       "unit": "gpm"
+      },
+      {
+       "p": "duration_hr",
+       "label": "Duration",
+       "type": "number",
+       "unit": "hr"
+      },
+      {
+       "p": "swl_ft",
+       "label": "Static level",
+       "type": "number",
+       "unit": "ft bgl"
+      },
+      {
+       "p": "pwl_ft",
+       "label": "Pumping level",
+       "type": "number",
+       "unit": "ft bgl"
+      },
+      {
+       "p": "r_w_ft",
+       "label": "Well radius",
+       "type": "number",
+       "unit": "ft"
+      },
+      {
+       "p": "date",
+       "label": "Test date",
+       "type": "date"
+      },
+      {
+       "p": "tracking_no",
+       "label": "TDLR tracking no.",
+       "type": "text"
+      }
+     ]
+    }
+   ]
+  }
+ },
+ {
+  "id": "proposed",
+  "n": "4",
+  "title": "Proposed wells",
+  "blurb": "The wells being applied for. Construction is entered top down.",
+  "repeat": {
+   "path": "proposed_wells",
+   "label": "Proposed well",
+   "nameFrom": [
+    "display_name",
+    "id"
+   ],
+   "schematic": true,
+   "fields": [
+    {
+     "p": "id",
+     "label": "Well id",
+     "type": "text",
+     "req": true,
+     "hint": "short, unique, e.g. W2"
+    },
+    {
+     "p": "display_name",
+     "label": "Name in report",
+     "type": "text",
+     "hint": "e.g. Well No. 2"
+    },
+    {
+     "p": "aquifer",
+     "label": "Aquifer",
+     "type": "select",
+     "req": true,
+     "opts": [
+      "Chicot",
+      "Evangeline",
+      "Burkeville",
+      "Jasper",
+      "Catahoula",
+      "Other"
+     ]
+    },
+    {
+     "p": "lat",
+     "label": "Latitude",
+     "type": "text",
+     "req": true,
+     "hint": "30.170167 or 30 10 12.60 N"
+    },
+    {
+     "p": "lon",
+     "label": "Longitude",
+     "type": "text",
+     "req": true,
+     "hint": "west is negative"
+    },
+    {
+     "p": "max_rate_gpm",
+     "label": "Maximum rate",
+     "type": "number",
+     "req": true,
+     "unit": "gpm"
+    },
+    {
+     "p": "total_depth_ft",
+     "label": "Total depth",
+     "type": "number",
+     "req": true,
+     "unit": "ft bgl"
+    },
+    {
+     "p": "elevation_ft_msl",
+     "label": "Ground elevation",
+     "type": "number",
+     "unit": "ft msl"
+    },
+    {
+     "p": "elevation_source",
+     "label": "Elevation source",
+     "type": "text"
+    },
+    {
+     "p": "static_water_level_ft",
+     "label": "Static water level",
+     "type": "number",
+     "unit": "ft bgl"
+    },
+    {
+     "p": "swl_source",
+     "label": "Static level source",
+     "type": "text"
+    },
+    {
+     "p": "packer_depth_ft",
+     "label": "Packer",
+     "type": "number",
+     "unit": "ft bgl"
+    },
+    {
+     "p": "pump_setting_ft",
+     "label": "Pump setting",
+     "type": "number",
+     "unit": "ft bgl"
+    },
+    {
+     "p": "r_w_ft",
+     "label": "Evaluation radius",
+     "type": "number",
+     "unit": "ft",
+     "hint": "blank = borehole radius at screen"
+    },
+    {
+     "p": "nearest_property_boundary_ft",
+     "label": "To property line",
+     "type": "number",
+     "unit": "ft"
+    },
+    {
+     "p": "coord_datum",
+     "label": "Coordinate datum",
+     "type": "text"
+    }
+   ],
+   "tables": [
+    {
+     "path": "borehole",
+     "sub": "Borehole",
+     "cols": [
+      {
+       "p": "top_ft",
+       "label": "Top",
+       "type": "number"
+      },
+      {
+       "p": "bottom_ft",
+       "label": "Bottom",
+       "type": "number"
+      },
+      {
+       "p": "diameter_in",
+       "label": "Dia. in",
+       "type": "number"
+      }
+     ]
+    },
+    {
+     "path": "casing",
+     "sub": "Casing",
+     "cols": [
+      {
+       "p": "top_ft",
+       "label": "Top",
+       "type": "number"
+      },
+      {
+       "p": "bottom_ft",
+       "label": "Bottom",
+       "type": "number"
+      },
+      {
+       "p": "diameter_in",
+       "label": "Dia. in",
+       "type": "number"
+      },
+      {
+       "p": "wall_in",
+       "label": "Wall in",
+       "type": "number"
+      },
+      {
+       "p": "material",
+       "label": "Material",
+       "type": "text"
+      }
+     ]
+    },
+    {
+     "path": "screen",
+     "sub": "Screen",
+     "cols": [
+      {
+       "p": "top_ft",
+       "label": "Top",
+       "type": "number"
+      },
+      {
+       "p": "bottom_ft",
+       "label": "Bottom",
+       "type": "number"
+      },
+      {
+       "p": "diameter_in",
+       "label": "Dia. in",
+       "type": "number"
+      },
+      {
+       "p": "material",
+       "label": "Material",
+       "type": "text"
+      },
+      {
+       "p": "slot_in",
+       "label": "Slot in",
+       "type": "number"
+      }
+     ]
+    },
+    {
+     "path": "cement",
+     "sub": "Cement",
+     "cols": [
+      {
+       "p": "top_ft",
+       "label": "Top",
+       "type": "number"
+      },
+      {
+       "p": "bottom_ft",
+       "label": "Bottom",
+       "type": "number"
+      },
+      {
+       "p": "method",
+       "label": "Method",
+       "type": "text"
+      }
+     ]
+    },
+    {
+     "path": "filter_pack",
+     "sub": "Filter pack",
+     "cols": [
+      {
+       "p": "top_ft",
+       "label": "Top",
+       "type": "number"
+      },
+      {
+       "p": "bottom_ft",
+       "label": "Bottom",
+       "type": "number"
+      }
+     ]
+    },
+    {
+     "path": "anticipated_lithology",
+     "sub": "Anticipated lithology",
+     "paste": true,
+     "cols": [
+      {
+       "p": "top_ft",
+       "label": "Top",
+       "type": "number"
+      },
+      {
+       "p": "bottom_ft",
+       "label": "Bottom",
+       "type": "number"
+      },
+      {
+       "p": "description",
+       "label": "Description",
+       "type": "text"
+      },
+      {
+       "p": "source",
+       "label": "Source",
+       "type": "text"
+      }
+     ]
+    }
+   ]
+  }
+ },
+ {
+  "id": "existing",
+  "n": "5",
+  "title": "Existing system wells",
+  "blurb": "Wells already in the same system. They add to the system rate and to the interference analysis.",
+  "repeat": {
+   "path": "existing_wells",
+   "label": "Existing well",
+   "nameFrom": [
+    "display_name",
+    "id"
+   ],
+   "fields": [
+    {
+     "p": "id",
+     "label": "Well id",
+     "type": "text",
+     "req": true
+    },
+    {
+     "p": "display_name",
+     "label": "Name in report",
+     "type": "text"
+    },
+    {
+     "p": "registration_no",
+     "label": "Registration no.",
+     "type": "text"
+    },
+    {
+     "p": "permit_no",
+     "label": "Permit no.",
+     "type": "text"
+    },
+    {
+     "p": "aquifer",
+     "label": "Aquifer",
+     "type": "select",
+     "req": true,
+     "opts": [
+      "Chicot",
+      "Evangeline",
+      "Burkeville",
+      "Jasper",
+      "Catahoula",
+      "Other"
+     ]
+    },
+    {
+     "p": "lat",
+     "label": "Latitude",
+     "type": "text",
+     "req": true
+    },
+    {
+     "p": "lon",
+     "label": "Longitude",
+     "type": "text",
+     "req": true
+    },
+    {
+     "p": "max_rate_gpm",
+     "label": "Maximum rate",
+     "type": "number",
+     "req": true,
+     "unit": "gpm"
+    },
+    {
+     "p": "total_depth_ft",
+     "label": "Total depth",
+     "type": "number",
+     "unit": "ft bgl"
+    },
+    {
+     "p": "status",
+     "label": "Status",
+     "type": "text"
+    },
+    {
+     "p": "r_w_ft",
+     "label": "Evaluation radius",
+     "type": "number",
+     "unit": "ft"
+    },
+    {
+     "p": "nearest_property_boundary_ft",
+     "label": "To property line",
+     "type": "number",
+     "unit": "ft"
+    },
+    {
+     "p": "include_in_system",
+     "label": "Counts toward system rate",
+     "type": "check",
+     "wide": true
+    }
+   ],
+   "tables": [
+    {
+     "path": "screen",
+     "sub": "Screen",
+     "cols": [
+      {
+       "p": "top_ft",
+       "label": "Top",
+       "type": "number"
+      },
+      {
+       "p": "bottom_ft",
+       "label": "Bottom",
+       "type": "number"
+      },
+      {
+       "p": "diameter_in",
+       "label": "Dia. in",
+       "type": "number"
+      },
+      {
+       "p": "material",
+       "label": "Material",
+       "type": "text"
+      }
+     ]
+    }
+   ]
+  }
+ },
+ {
+  "id": "permit",
+  "n": "6",
+  "title": "Permit and analysis",
+  "blurb": "Requested volume, and the simulation settings the report uses.",
+  "fields": [
+   {
+    "p": "permit.annual_volume_gal",
+    "label": "Annual volume",
+    "type": "number",
+    "req": true,
+    "unit": "gallons"
+   },
+   {
+    "p": "permit.spacing_exception_requested",
+    "label": "Requesting a spacing exception",
+    "type": "check",
+    "wide": true
+   },
+   {
+    "p": "analysis.cone_edge_thresholds_ft",
+    "label": "Cone edge thresholds",
+    "type": "text",
+    "list": "num",
+    "unit": "ft",
+    "hint": "comma separated"
+   },
+   {
+    "p": "analysis.contour_interval_ft",
+    "label": "Contour interval",
+    "type": "number",
+    "unit": "ft"
+   },
+   {
+    "p": "analysis.map_radius_mi",
+    "label": "Map radius",
+    "type": "number",
+    "unit": "mi"
+   },
+   {
+    "p": "analysis.well_efficiency",
+    "label": "Well efficiency",
+    "type": "number",
+    "step": "any",
+    "hint": "0 to 1, blank if unknown"
+   },
+   {
+    "p": "analysis.other_aquifer_wells",
+    "label": "Wells in other aquifers",
+    "type": "select",
+    "opts": [
+     [
+      "compute_and_flag",
+      "Compute and footnote"
+     ],
+     [
+      "na",
+      "Report as not applicable"
+     ]
+    ]
+   },
+   {
+    "p": "analysis.scenarios.include_24h",
+    "label": "Simulate 24 hours",
+    "type": "check"
+   },
+   {
+    "p": "analysis.scenarios.include_max_production",
+    "label": "Simulate maximum production",
+    "type": "check"
+   },
+   {
+    "p": "analysis.scenarios.fixed_durations_days",
+    "label": "Extra durations",
+    "type": "text",
+    "list": "num",
+    "unit": "days",
+    "hint": "comma separated"
+   },
+   {
+    "p": "analysis.scenarios.fixed_duration_labels",
+    "label": "Labels for those",
+    "type": "text",
+    "list": "str",
+    "hint": "comma separated"
+   }
+  ]
+ }
+]</script>
+<script type="application/json" id="example-payload">{
+ "schema_version": 1,
+ "mode": "lsgcd_pre_drilling",
+ "report": {
+  "title": "Lone Star Groundwater Conservation District Hydrogeological Report - Black Oak Water System Well No. 2",
+  "date": "2023-05-01",
+  "revision": {
+   "number": 1,
+   "reason": null
+  },
+  "issuing_firm": "generic"
+ },
+ "applicant": {
+  "name": "Aqua Texas, Inc.",
+  "pws_name": "Black Oak Water System",
+  "pws_id": "TX 1700851",
+  "system_name": "Black Oak Water System"
+ },
+ "district": {
+  "id": "lsgcd",
+  "county": "Montgomery",
+  "rules_version": "Guidelines 11-11-2022",
+  "verified_on": "2023-05-01"
+ },
+ "site": {
+  "address": "Black Oak Dr., Magnolia, Texas",
+  "description": "southern Montgomery County",
+  "nearest_boundary_distance_ft": 25,
+  "boundary_distance_source": "property map"
+ },
+ "aquifers": [
+  {
+   "name": "Evangeline",
+   "top_ft_bgl": 260,
+   "bottom_ft_bgl": 944,
+   "source": "Gulf Coast Aquifer (northern portion) GAM layer surfaces (Kasmarek, 2013)",
+   "confinement": {
+    "status": "confined",
+    "confining_unit": "Chicot clays / upper Fleming clays",
+    "thickness_ft": null,
+    "source": null
+   },
+   "params": {
+    "t_ft2d": 1023,
+    "s": 0.000336,
+    "k_ftd": 1.5,
+    "source": {
+     "kind": "site_test",
+     "citation": "Transmissivity from 36-hour aquifer test of Black Oak Well No. 1 (TDLR tracking no. 442731) in lieu of the GAM value of 1,231.2 ft2/day; storativity from the GAM (Kasmarek, 2013)",
+     "model_version": "HAGM (Kasmarek, 2013)",
+     "notes": "GAM values at the site: T = 1,231.2 ft2/day, K = 1.2 ft/day, S = 3.36 x 10^-4"
+    }
+   },
+   "site_test": {
+    "well_ref": "W1",
+    "q_gpm": 270,
+    "duration_hr": 36,
+    "swl_ft": 364,
+    "pwl_ft": 434.9,
+    "r_w_ft": 0.5,
+    "tracking_no": "442731"
+   }
+  }
+ ],
+ "proposed_wells": [
+  {
+   "id": "W2",
+   "display_name": "Well No. 2",
+   "lat": "30° 10' 12.60\" N",
+   "lon": "95° 34' 41.15\" W",
+   "elevation_ft_msl": 166,
+   "elevation_source": "topographic map",
+   "aquifer": "Evangeline",
+   "max_rate_gpm": 385,
+   "total_depth_ft": 780,
+   "static_water_level_ft": 350,
+   "swl_source": "nearby Well No. 1 (364 ft bgl in 2017), rounded",
+   "borehole": [
+    {
+     "top_ft": 0,
+     "bottom_ft": 700,
+     "diameter_in": 11.875
+    },
+    {
+     "top_ft": 700,
+     "bottom_ft": 780,
+     "diameter_in": 7.875
+    }
+   ],
+   "casing": [
+    {
+     "top_ft": -2,
+     "bottom_ft": 700,
+     "diameter_in": 8.625,
+     "wall_in": 0.322,
+     "material": "steel"
+    }
+   ],
+   "screen": [
+    {
+     "top_ft": 700,
+     "bottom_ft": 780,
+     "diameter_in": 6.625,
+     "material": "steel",
+     "slot_in": null
+    }
+   ],
+   "cement": [
+    {
+     "top_ft": 0,
+     "bottom_ft": 700,
+     "method": "pressure cemented"
+    }
+   ],
+   "packer_depth_ft": 700,
+   "anticipated_lithology": [
+    {
+     "top_ft": 0,
+     "bottom_ft": 220,
+     "description": "Sandy clay"
+    },
+    {
+     "top_ft": 220,
+     "bottom_ft": 310,
+     "description": "Sand"
+    },
+    {
+     "top_ft": 310,
+     "bottom_ft": 360,
+     "description": "Clay"
+    },
+    {
+     "top_ft": 360,
+     "bottom_ft": 400,
+     "description": "Sandy clay"
+    },
+    {
+     "top_ft": 400,
+     "bottom_ft": 600,
+     "description": "Sand"
+    },
+    {
+     "top_ft": 600,
+     "bottom_ft": 660,
+     "description": "Sandy clay"
+    },
+    {
+     "top_ft": 660,
+     "bottom_ft": 780,
+     "description": "Sand"
+    }
+   ],
+   "r_w_ft": 0.5,
+   "nearest_property_boundary_ft": 25
+  }
+ ],
+ "existing_wells": [
+  {
+   "id": "W1",
+   "display_name": "Well No. 1",
+   "registration_no": "2016092601",
+   "permit_no": "OP-16092601",
+   "lat": 30.17,
+   "lon": -95.578056,
+   "aquifer": "Evangeline",
+   "max_rate_gpm": 350,
+   "total_depth_ft": 655,
+   "screen": [
+    {
+     "top_ft": 600,
+     "bottom_ft": 655,
+     "diameter_in": 6.0,
+     "material": "steel"
+    }
+   ],
+   "status": "Operating",
+   "include_in_system": true,
+   "r_w_ft": 0.5,
+   "nearest_property_boundary_ft": 50
+  }
+ ],
+ "permit": {
+  "annual_volume_gal": 29000000
+ },
+ "analysis": {
+  "cone_edge_thresholds_ft": [
+   1.0,
+   5.0
+  ],
+  "contour_interval_ft": 5,
+  "map_radius_mi": 1.0
+ }
+}</script>
+<script>
+/* The field spec is data, not code: the page renders from it and the test suite reads the same block to prove every
+   required intake field has a control. Row defaults and card titles are the only per-list behaviour. */
+const SECTIONS = JSON.parse(document.getElementById("field-spec").textContent);
+const LSGCD_TRIGGER_GPM = 700;   // Guidelines 11-11-2022, I.B
+const ROW_DEFAULTS = {
+  aquifers: () => ({name:"Evangeline", params:{source:{kind:"gam"}}, confinement:{status:"unknown"}}),
+  proposed_wells: () => ({id:"", screen:[], borehole:[], casing:[], cement:[], filter_pack:[], anticipated_lithology:[]}),
+  existing_wells: () => ({id:"", status:"Operating", include_in_system:true, screen:[]}),
+};
+
+const BLANK = () => ({
+  schema_version:1, mode:"lsgcd_pre_drilling",
+  report:{title:"", date:"", revision:{number:1}, issuing_firm:"ballard"},
+  applicant:{name:""}, district:{id:"lsgcd", county:""}, site:{},
+  aquifers:[ROW_DEFAULTS.aquifers()], proposed_wells:[ROW_DEFAULTS.proposed_wells()], existing_wells:[],
+  permit:{}, analysis:{scenarios:{include_24h:true, include_max_production:true}},
+});
+const KEY = "hydrostudy.intake.draft.v1";
+let state, fromExample = false;
+try{ const raw = localStorage.getItem(KEY); state = raw ? JSON.parse(raw) : BLANK(); }catch(e){ state = BLANK(); }
+if(!state || typeof state !== "object" || !Array.isArray(state.proposed_wells)) state = BLANK();
+
+function getIn(o,p){ return p.split(".").reduce((x,k)=> (x==null?undefined:x[k]), o); }
+function setIn(o,p,v){ const ks=p.split("."); let x=o;
+  for(let i=0;i<ks.length-1;i++){ const k=ks[i]; if(x[k]==null) x[k]= /^\d+$/.test(ks[i+1])?[]:{}; x=x[k]; }
+  x[ks[ks.length-1]]=v; }
+function save(){ try{ localStorage.setItem(KEY, JSON.stringify(state)); }catch(e){} }
+
+function ce(tag,attrs,kids){ const n=document.createElement(tag);
+  for(const k in (attrs||{})){ const v=attrs[k]; if(v==null||v===false) continue;
+    if(k==="class") n.className=v; else if(k==="text") n.textContent=v; else n.setAttribute(k,v===true?"":v); }
+  (kids||[]).forEach(c=>c&&n.appendChild(c)); return n; }
+
+let uid=0;
+function control(schemaPath, statePath, spec, bare){
+  const id="f"+(++uid), cur=getIn(state,statePath), type=spec.type||"text";
+  const wrap=ce("div",{class:"field"+(spec.wide&&!bare?" wide":"")});
+  if(!bare && type!=="check")
+    wrap.appendChild(ce("label",{for:id},[
+      document.createTextNode(spec.label+(spec.unit?" ("+spec.unit+")":"")),
+      spec.req?ce("span",{class:"req",text:" *"}):null]));
+  let inp;
+  if(type==="select"){
+    inp=ce("select",{id:id});
+    (spec.opts||[]).forEach(op=>{ const v=Array.isArray(op)?op[0]:op, t=Array.isArray(op)?op[1]:op;
+      inp.appendChild(ce("option",{value:v,text:t,selected:String(cur)===String(v)})); });
+  } else if(type==="check"){
+    inp=ce("input",{id:id,type:"checkbox",checked:!!cur});
+    wrap.appendChild(ce("div",{class:"chk"},[inp,ce("label",{for:id,text:spec.label,style:"text-transform:none;font-family:var(--sans);font-size:14px;letter-spacing:0;color:var(--ink)"})]));
+  } else if(type==="area"){
+    inp=ce("textarea",{id:id}); inp.value=cur==null?"":cur;
+  } else {
+    const t = type==="number"?"number":(type==="date"?"date":"text");
+    inp=ce("input",{id:id,type:t,step:spec.step||(type==="number"?"any":null),min:spec.min,
+      placeholder:bare?spec.label:null,"aria-label":bare?spec.label:null});
+    inp.value = spec.list ? (Array.isArray(cur)?cur.join(", "):"") : (cur==null?"":cur);
+    if(type==="number") inp.setAttribute("data-num","");
+  }
+  inp.setAttribute("data-field", schemaPath);
+  inp.setAttribute("data-path", statePath);
+  if(spec.list) inp.setAttribute("data-list", spec.list);
+  if(spec.req) inp.setAttribute("data-req","");
+  inp.addEventListener("input", onEdit); inp.addEventListener("change", onEdit);
+  if(type!=="check") wrap.appendChild(inp);
+  if(spec.hint && !bare) wrap.appendChild(ce("p",{class:"hint",text:spec.hint}));
+  return wrap;
+}
+
+function onEdit(e){
+  const el=e.target, p=el.getAttribute("data-path"), list=el.getAttribute("data-list");
+  let v;
+  if(el.type==="checkbox") v=el.checked;
+  else if(list){ const parts=el.value.split(",").map(s=>s.trim()).filter(Boolean);
+    v = list==="num" ? parts.map(Number).filter(n=>!Number.isNaN(n)) : parts; }
+  else if(el.hasAttribute("data-num")) v = el.value===""?"":Number(el.value);
+  else v=el.value;
+  setIn(state,p,v); save();
+  const fld=el.getAttribute("data-field");
+  if(fld.endsWith(".id")||fld.endsWith(".name")||fld.endsWith("display_name")) renderAll(); else refresh();
+}
+
+function table(t, base, schemaBase){
+  const rows=getIn(state,base)||[];
+  const box=ce("div",{class:"grid"}), tbl=ce("table");
+  tbl.appendChild(ce("thead",{},[ce("tr",{},t.cols.map(c=>ce("th",{text:c.label})).concat([ce("th",{text:""})]))]));
+  const tb=ce("tbody");
+  rows.forEach((_,i)=>{
+    const cells=t.cols.map(c=>ce("td",{},[control(schemaBase+"[]."+c.p, base+"."+i+"."+c.p, c, true)]));
+    const rm=ce("button",{class:"mini",type:"button",text:"×","aria-label":"Remove row"});
+    rm.onclick=()=>{ rows.splice(i,1); save(); renderAll(); };
+    tb.appendChild(ce("tr",{},cells.concat([ce("td",{},[rm])])));
+  });
+  tbl.appendChild(tb); box.appendChild(tbl);
+  const add=ce("button",{class:"mini",type:"button",text:"Add "+t.sub.toLowerCase()+" row"});
+  add.onclick=()=>{ const a=getIn(state,base); if(Array.isArray(a)) a.push({}); else setIn(state,base,[{}]);
+    save(); renderAll(); };
+  const out=[ce("p",{class:"sub",text:t.sub}), box, add];
+  if(t.paste){
+    const ta=ce("textarea",{placeholder:"Paste the driller's log, one interval per line: 0-220 Sandy clay",
+      "aria-label":"Paste driller's log"});
+    const btn=ce("button",{class:"mini",type:"button",text:"Add intervals from pasted log"});
+    btn.onclick=()=>{ const got=parseLog(ta.value);
+      if(!got.length){ toast("No intervals recognised. Use lines like 0-220 Sandy clay.","bad"); return; }
+      const a=getIn(state,base)||[]; setIn(state,base,a.concat(got)); save(); renderAll();
+      toast("Added "+got.length+" interval"+(got.length>1?"s":"")+"."," good".trim()); };
+    out.push(ce("div",{class:"field",style:"margin-top:8px"},[ta,btn]));
+  }
+  return out;
+}
+
+function parseLog(text){
+  const out=[];
+  (text||"").split(/\r?\n/).forEach(line=>{
+    const m=line.match(/^\s*(\d+(?:\.\d+)?)\s*(?:-|to|–|—)\s*(\d+(?:\.\d+)?)\s*[,:;\t ]\s*(.+?)\s*$/i);
+    if(m){ const top=Number(m[1]), bottom=Number(m[2]);
+      if(bottom>top) out.push({top_ft:top,bottom_ft:bottom,description:m[3]}); }
+  });
+  return out;
+}
+
+function cardTitle(r,item,i){
+  for(const k of (r.nameFrom||[])) if(item[k]) return item[k];
+  return r.label+" "+(i+1);
+}
+
+function renderSection(sec){
+  const el=ce("section",{id:"sec-"+sec.id});
+  el.appendChild(ce("div",{class:"sechead"},[ce("span",{class:"n",text:sec.n}),ce("h2",{text:sec.title}),
+    sec.blurb?ce("p",{text:sec.blurb}):null]));
+  if(sec.fields) el.appendChild(ce("div",{class:"row"}, sec.fields.map(s=>control(s.p,s.p,s))));
+  if(sec.repeat){
+    const r=sec.repeat;
+    if(!Array.isArray(state[r.path])) state[r.path]=[];
+    const arr=state[r.path];
+    arr.forEach((item,i)=>{
+      const card=ce("div",{class:"item"});
+      const rm=ce("button",{class:"mini",type:"button",text:"Remove"});
+      rm.onclick=()=>{ arr.splice(i,1); save(); renderAll(); };
+      card.appendChild(ce("div",{class:"itemhead"},[ce("h3",{text:cardTitle(r,item,i)}),
+        ce("span",{class:"tag",text:r.label+" "+(i+1)}), rm]));
+      const body=ce("div",{},[ce("div",{class:"row"}, r.fields.map(s=>
+        control(r.path+"[]."+s.p, r.path+"."+i+"."+s.p, s)))]);
+      (r.groups||[]).forEach(g=>{
+        body.appendChild(ce("p",{class:"sub",text:g.sub}));
+        body.appendChild(ce("div",{class:"row"}, g.fields.map(s=>
+          control(r.path+"[]."+g.prefix+"."+s.p, r.path+"."+i+"."+g.prefix+"."+s.p, s))));
+      });
+      (r.tables||[]).forEach(t=>
+        table(t, r.path+"."+i+"."+t.path, r.path+"[]."+t.path).forEach(n=>body.appendChild(n)));
+      if(r.schematic){
+        const fig=ce("figure",{class:"schem"},[ce("figcaption",{text:"As entered"})]);
+        fig.appendChild(schematic(item));
+        fig.appendChild(ce("div",{class:"legend"},[leg("var(--grout)","Cement"),leg("var(--steel)","Casing"),
+          leg("var(--accent)","Screen"),leg("var(--sand)","Filter pack")]));
+        card.appendChild(ce("div",{class:"split"},[body,fig]));
+      } else card.appendChild(body);
+      el.appendChild(card);
+    });
+    const add=ce("button",{class:"mini",type:"button",text:"Add "+r.label.toLowerCase()});
+    add.onclick=()=>{ arr.push((ROW_DEFAULTS[r.path]||(()=>({})))()); save(); renderAll(); };
+    el.appendChild(add);
+  }
+  return el;
+}
+function leg(c,t){ return ce("span",{},[ce("i",{style:"background:"+c}),document.createTextNode(t)]); }
+
+function schematic(w){
+  const NS="http://www.w3.org/2000/svg", W=176, H=392, padT=16, padB=14, left=54, colW=52;
+  const td=Number(w.total_depth_ft)||0;
+  const svg=document.createElementNS(NS,"svg");
+  svg.setAttribute("viewBox","0 0 "+W+" "+H); svg.setAttribute("role","img");
+  svg.setAttribute("aria-label","Well construction as entered");
+  const add=(t,a,txt)=>{ const n=document.createElementNS(NS,t);
+    for(const k in a) n.setAttribute(k,a[k]); if(txt!=null) n.textContent=txt; svg.appendChild(n); return n; };
+  if(!td){ add("text",{x:W/2,y:H/2,"text-anchor":"middle","font-size":"11",fill:"var(--muted)",
+    "font-family":"var(--mono)"},"Enter total depth"); return svg; }
+  const y=d=> padT + (Math.max(0,Math.min(d,td))/td)*(H-padT-padB);
+  add("line",{x1:left-8,y1:padT,x2:left-8,y2:H-padB,stroke:"var(--line-strong)","stroke-width":1});
+  [0,.25,.5,.75,1].map(k=>td*k).forEach(d=>{ const yy=y(d);
+    add("line",{x1:left-11,y1:yy,x2:left-8,y2:yy,stroke:"var(--line-strong)","stroke-width":1});
+    add("text",{x:left-14,y:yy+3,"text-anchor":"end","font-size":"9",fill:"var(--muted)",
+      "font-family":"var(--mono)"},String(Math.round(d))); });
+  const band=(arr,fill,w0,op)=>(arr||[]).forEach(iv=>{ const t=Number(iv.top_ft),b=Number(iv.bottom_ft);
+    if(!(b>t)) return;
+    add("rect",{x:left+(colW-w0)/2,y:y(t),width:w0,height:Math.max(1,y(b)-y(t)),fill:fill,
+      "fill-opacity":op==null?1:op}); });
+  band(w.borehole,"var(--sunk)",colW,1);
+  (w.borehole||[]).forEach(iv=>{ const t=Number(iv.top_ft),b=Number(iv.bottom_ft); if(!(b>t))return;
+    add("rect",{x:left,y:y(t),width:colW,height:Math.max(1,y(b)-y(t)),fill:"none",stroke:"var(--line-strong)",
+      "stroke-width":1,"stroke-dasharray":"2 2"}); });
+  band(w.cement,"var(--grout)",colW,.45);
+  band(w.filter_pack,"var(--sand)",colW-8,.55);
+  band(w.casing,"var(--steel)",14,1);
+  band(w.screen,"var(--accent)",14,1);
+  (w.screen||[]).forEach(iv=>{ const t=Number(iv.top_ft),b=Number(iv.bottom_ft); if(!(b>t))return;
+    for(let yy=y(t)+3; yy<y(b); yy+=5)
+      add("line",{x1:left+(colW-22)/2,y1:yy,x2:left+(colW+22)/2,y2:yy,stroke:"var(--accent)","stroke-width":.8}); });
+  const swl=Number(w.static_water_level_ft);
+  if(swl>0&&swl<td){ add("line",{x1:left-4,y1:y(swl),x2:left+colW+8,y2:y(swl),stroke:"var(--accent)",
+      "stroke-width":1,"stroke-dasharray":"4 3"});
+    add("text",{x:left+colW+10,y:y(swl)+3,"font-size":"8.5",fill:"var(--accent)","font-family":"var(--mono)"},"SWL"); }
+  const pk=Number(w.packer_depth_ft);
+  if(pk>0&&pk<=td) add("rect",{x:left+(colW-20)/2,y:y(pk)-2,width:20,height:4,fill:"var(--ink)"});
+  return svg;
+}
+
+function num(v){ const n=Number(v); return Number.isFinite(n)?n:null; }
+function looksEastLon(v){
+  if(v==null||v==="") return false;
+  const s=String(v).trim();
+  if(/[wW]\s*$/.test(s)) return false;
+  if(/[eE]\s*$/.test(s)) return true;
+  const n=Number(s.replace(/[^\d.\-]/g,""));
+  return /^\s*\d/.test(s) && !s.startsWith("-") && Number.isFinite(n) && n>0;
+}
+function intervalIssues(list,name,label,td){
+  const out=[];
+  (list||[]).forEach((iv,i)=>{
+    const t=num(iv.top_ft), b=num(iv.bottom_ft), where=label+" "+name+" row "+(i+1);
+    if(t==null||b==null){ out.push([where,"needs a top and a bottom depth"]); return; }
+    if(b<=t) out.push([where,"bottom ("+b+") must be below top ("+t+")"]);
+    if(td&&b>td+1e-6) out.push([where,"bottom ("+b+") is deeper than the total depth ("+td+")"]);
+  });
+  return out;
+}
+function validate(){
+  const iss=[];
+  document.querySelectorAll("[data-req]").forEach(el=>{
+    const v=getIn(state, el.getAttribute("data-path"));
+    const empty = v===undefined||v===null||v==="";
+    el.classList.toggle("err", empty);
+    if(empty){ const lab=el.closest(".field")?.querySelector("label")?.textContent||el.getAttribute("data-field");
+      iss.push([lab.replace(" *",""),"is required"]); }
+  });
+  const names=(state.aquifers||[]).map(a=>a.name).filter(Boolean);
+  if(!names.length) iss.push(["Aquifers","at least one aquifer is needed"]);
+  if(!(state.proposed_wells||[]).length) iss.push(["Proposed wells","at least one proposed well is required"]);
+  const ids=[];
+  [...(state.proposed_wells||[]),...(state.existing_wells||[])].forEach(w=>{
+    const label=w.display_name||w.id||"well";
+    if(w.id){ if(ids.includes(w.id)) iss.push([label,"well id “"+w.id+"” is used twice"]); ids.push(w.id); }
+    if(looksEastLon(w.lon)) iss.push([label,"longitude must be negative in Texas, or written with W"]);
+    if(w.aquifer&&names.length&&!names.includes(w.aquifer))
+      iss.push([label,"aquifer “"+w.aquifer+"” is not one of the aquifers defined above"]);
+    const td=num(w.total_depth_ft);
+    ["screen","borehole","casing","cement","filter_pack","anticipated_lithology"].forEach(k=>{
+      if(w[k]) intervalIssues(w[k],k.replace(/_/g," "),label,td).forEach(x=>iss.push(x)); });
+    const cas=(w.casing||[]).map(c=>num(c.bottom_ft)).filter(x=>x!=null);
+    const scr=(w.screen||[]).map(s=>num(s.top_ft)).filter(x=>x!=null);
+    if(cas.length&&scr.length&&Math.max(...cas)>Math.min(...scr)+1e-6)
+      iss.push([label,"casing reaches below the top of the first screen"]);
+    const cem=(w.cement||[]).map(c=>num(c.bottom_ft)).filter(x=>x!=null);
+    if(cem.length&&cas.length&&Math.max(...cem)>Math.max(...cas)+1e-6)
+      iss.push([label,"cement extends below the cased interval"]);
+  });
+  (state.aquifers||[]).forEach(a=>{
+    const t=num(a.top_ft_bgl), b=num(a.bottom_ft_bgl);
+    if(t!=null&&b!=null&&b<=t) iss.push([a.name||"aquifer","base must be below top"]);
+    const st=a.site_test;
+    if(st){ const s=num(st.swl_ft), p=num(st.pwl_ft);
+      if(s!=null&&p!=null&&p<=s) iss.push([(a.name||"aquifer")+" test","pumping level must be deeper than static level"]); }
+  });
+  if(!(num(state.permit&&state.permit.annual_volume_gal)>0))
+    iss.push(["Annual volume","must be greater than zero"]);
+  return iss;
+}
+
+function prune(v){
+  const empty = x => x===null||x===""||(Array.isArray(x)&&!x.length)||
+    (x&&typeof x==="object"&&!Array.isArray(x)&&!Object.keys(x).length);
+  if(Array.isArray(v)) return v.map(prune).filter(x=>!empty(x));
+  if(v&&typeof v==="object"){ const o={};
+    Object.keys(v).forEach(k=>{ const x=prune(v[k]); if(!empty(x)) o[k]=x; }); return o; }
+  if(typeof v==="string"){ const s=v.trim(); return s===""?null:s; }
+  return v===undefined?null:v;
+}
+function slug(){
+  const base=((state.applicant&&(state.applicant.system_name||state.applicant.name))||"intake")+"-"+
+    (((state.proposed_wells||[])[0]||{}).id||"well");
+  return base.toLowerCase().replace(/[^a-z0-9]+/g,"-").replace(/^-|-$/g,"").slice(0,60)||"intake";
+}
+function payload(){
+  const p=prune(JSON.parse(JSON.stringify(state)));
+  p._form={slug:slug(), submitted_at:new Date().toISOString(), form:"web intake sheet v1"};
+  if(fromExample) p._form.source="Black Oak example (public 2023 submittal), not a real well";
+  return p;
+}
+
+function renderAll(){
+  const host=document.getElementById("form"); host.innerHTML="";
+  SECTIONS.forEach(s=>host.appendChild(renderSection(s)));
+  const nav=document.getElementById("nav"); nav.innerHTML="";
+  SECTIONS.concat([{id:"review",n:"7",title:"Review and send"}]).forEach(s=>
+    nav.appendChild(ce("a",{href:"#sec-"+s.id},[ce("span",{text:s.title}),ce("span",{class:"n",text:s.n})])));
+  const b=document.getElementById("example-banner"); b.innerHTML="";
+  if(fromExample) b.appendChild(ce("div",{class:"banner"},[ce("b",{text:"Example data loaded. "}),
+    document.createTextNode("These are the published figures from the Black Oak Water System Well No. 2 submittal of "+
+      "May 2023, for training only. Clear the sheet before entering a real well.")]));
+  refresh();
+}
+function refresh(){
+  const iss=validate();
+  const rate=[...(state.proposed_wells||[]),
+    ...(state.existing_wells||[]).filter(w=>w.include_in_system!==false)]
+    .reduce((s,w)=>s+(Number(w.max_rate_gpm)||0),0);
+  document.getElementById("m-rate").textContent=rate.toLocaleString()+" gpm";
+  document.getElementById("m-trig").textContent = (state.district||{}).id==="lsgcd"
+    ? (rate>=LSGCD_TRIGGER_GPM ? "at or above "+LSGCD_TRIGGER_GPM : "below "+LSGCD_TRIGGER_GPM) : "n/a";
+  document.getElementById("m-wells").textContent=
+    (state.proposed_wells||[]).length+" proposed, "+(state.existing_wells||[]).length+" existing";
+  document.getElementById("m-iss").textContent=iss.length;
+  const ul=document.getElementById("issues"); ul.innerHTML=""; ul.className="issues"+(iss.length?"":" ok");
+  if(!iss.length) ul.appendChild(ce("li",{},[document.createTextNode(
+    "Every check passes. The generator validates it again on import.")]));
+  iss.slice(0,60).forEach(x=>ul.appendChild(ce("li",{},[ce("code",{text:x[0]}),document.createTextNode(x[1])])));
+  document.getElementById("preview").textContent=JSON.stringify(payload(),null,2);
+  document.querySelectorAll(".schem").forEach((fig,i)=>{
+    const w=(state.proposed_wells||[])[i]; if(!w) return;
+    const old=fig.querySelector("svg"); if(old) old.replaceWith(schematic(w));
+  });
+}
+function toast(msg,kind){
+  const t=document.getElementById("toast"); t.innerHTML="";
+  t.appendChild(ce("div",{class:"toast"+(kind?" "+kind.trim():""),text:msg}));
+}
+
+async function cap(name){
+  try{ return (window.claude && window.claude.use) ? await window.claude.use(name) : null; }catch(e){ return null; }
+}
+
+document.getElementById("b-example").onclick=()=>{
+  state=JSON.parse(document.getElementById("example-payload").textContent);
+  fromExample=true; save(); renderAll(); toast("Black Oak example loaded.","good");
+};
+document.getElementById("b-clear").onclick=()=>{
+  state=BLANK(); fromExample=false; save(); renderAll(); toast("Sheet cleared.");
+};
+document.getElementById("b-copy").onclick=async()=>{
+  try{ await navigator.clipboard.writeText(JSON.stringify(payload(),null,2)); toast("Payload copied.","good"); }
+  catch(e){ toast("Could not copy. Select the payload at the foot of the sheet instead.","bad"); }
+};
+document.getElementById("b-save").onclick=async()=>{
+  const d=await cap("downloads");
+  if(!d){ toast("Saving files is not available in this view. Use Copy JSON instead.","bad"); return; }
+  try{ await d.save({filename:slug()+".intake.json", data:JSON.stringify(payload(),null,2)});
+    toast("Saved.","good"); }
+  catch(e){ toast("Save declined or unavailable. Use Copy JSON instead.","bad"); }
+};
+document.getElementById("b-submit").onclick=async()=>{
+  const iss=validate(), db=await cap("db");
+  if(!db){ toast("Sending is not available in this view. Use Save file or Copy JSON.","bad"); return; }
+  const p=payload(); p._form.open_issues=iss.length;
+  try{ await db.doc("submissions/"+p._form.slug).set(p);
+    toast(iss.length ? "Sent, with "+iss.length+" open issue(s) noted." : "Sent. Ask Claude to import it.","good"); }
+  catch(e){ toast("Could not send: "+((e&&e.message)||"unknown error"),"bad"); }
+};
+
+renderAll();
+</script>

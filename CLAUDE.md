@@ -31,5 +31,9 @@ Use the `/hydro-report` skill (`.claude/skills/hydro-report/SKILL.md`) to walk a
 - The three pre-drilling `examples/` are transcriptions of public submittals and are the regression baseline (`tests/`);
   `examples/black_oak_well_2_post` uses SYNTHETIC test data (see its manifest) to exercise the post-drilling mode.
 - Post-drilling mode (`lsgcd_post_drilling`): `analysis/asbuilt.py`, `analysis/pumptest.py`, `report/assemble_post.py`.
+- The web intake sheet (`web/intake_form.html`, published as an Artifact) renders from its own `field-spec` JSON block;
+  `tests/test_intake_form.py` reads that block and fails if a required schema field has no control. Submissions are
+  JSON in the shape of intake.yaml and become a project via `hydrostudy import-intake` (`intake_import.py`), which is
+  the only YAML serializer - never add a second one in the page.
 - A SessionStart hook (`.claude/settings.json` -> `scripts/session_start.sh`) creates `.venv` and installs the package.
 - No network access is required to run. Live data connectors (Phase 2) are documented in `docs/DATA_SOURCES.md`.

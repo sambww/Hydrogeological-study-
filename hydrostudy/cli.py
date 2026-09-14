@@ -1,4 +1,4 @@
-"""hydrostudy command line: new | validate | run | render | checklist"""
+"""hydrostudy command line: new | import-intake | validate | run | render | checklist | doctor"""
 
 from __future__ import annotations
 
@@ -25,6 +25,30 @@ def cmd_new(args):
     (dst / "data" / "district_wells.csv").write_text("registration_no,permit_no,owner,address,city,total_depth_ft,screen_intervals,aquifer,status,lat,lon\n", encoding="utf-8")
     (dst / "data" / "water_quality_samples.csv").write_text("well_id,well_name,source,sample_date,lat,lon,depth_ft,aquifer,constituent,value,units,qualifier\n", encoding="utf-8")
     print(f"Scaffolded {dst}. Edit intake.yaml, review.yaml and the files under data/, then run: hydrostudy run {dst}")
+    return 0
+
+
+def cmd_import_intake(args):
+    from pydantic import ValidationError
+
+    from hydrostudy.intake_import import load_payload, write_intake
+    try:
+        payload = load_payload(args.payload)
+    except (OSError, ValueError) as e:
+        print(f"cannot read submission: {e}", file=sys.stderr)
+        return 2
+    try:
+        target = write_intake(args.project_dir, payload, force=args.force)
+    except FileExistsError as e:
+        print(f"{e}. Re-run with --force to overwrite.", file=sys.stderr)
+        return 2
+    except ValidationError as e:
+        print("submission is not a valid intake:")
+        for err in e.errors():
+            loc = ".".join(str(x) for x in err["loc"])
+            print(f"  - {loc}: {err['msg']}")
+        return 1
+    print(f"Wrote {target}. Next: fill data/manifest.yaml sources, then run: hydrostudy run {args.project_dir}")
     return 0
 
 
@@ -119,6 +143,11 @@ def main(argv=None):
     s = sub.add_parser("new", help="scaffold a new project folder")
     s.add_argument("project_dir")
     s.set_defaults(fn=cmd_new)
+    s = sub.add_parser("import-intake", help="write intake.yaml from a web intake form submission (JSON)")
+    s.add_argument("project_dir")
+    s.add_argument("payload", help="path to the submission JSON saved from the form or read out of the artifact database")
+    s.add_argument("--force", action="store_true", help="overwrite an existing intake.yaml")
+    s.set_defaults(fn=cmd_import_intake)
     s = sub.add_parser("validate", help="validate intake.yaml and review.yaml")
     s.add_argument("project_dir")
     s.set_defaults(fn=cmd_validate)

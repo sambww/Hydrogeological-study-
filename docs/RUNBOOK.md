@@ -108,7 +108,8 @@ parameter maps the consultants include.
 4. Property and parcels: export your tract polygon and the surrounding parcels from the county portal as WGS84
    GeoJSON into `data/`; set `site.boundary_geojson: data/boundary.geojson` in `intake.yaml`. The nearest-boundary
    distance is then measured for you.
-5. Fill `intake.yaml` from the well design. Field checklist (units in the file):
+5. Fill `intake.yaml` from the well design, either by hand as below or with the web intake sheet (section H), which
+   validates as you type and writes the file for you. Field checklist (units in the file):
    - applicant name, PWS name and ID, county, district `lsgcd`
    - each proposed well: display name, latitude/longitude (decimal or DMS, west longitudes negative), ground elevation
      (ft MSL), aquifer, maximum rate (gpm), total depth, borehole / casing / screen / cement / filter-pack intervals
@@ -205,3 +206,40 @@ from a summary, a search result, or a recollection you cannot attribute.
 
 Do the same for any new district. A district whose spacing rule nobody has read and nobody can attest to should stay
 `derived`, so every report it produces carries the qualifier.
+
+## H. The web intake sheet
+
+`web/intake_form.html` is published as an Artifact: a form covering everything in `intake.yaml` for a pre-drilling or
+feasibility project, so the well design can be entered by whoever has the driller's sheet in front of them rather than
+edited as YAML. Ask Claude for the link, or find it in your artifact gallery.
+
+It checks as you type: required fields, west longitudes entered positive, interval tops and bottoms the wrong way
+round, casing reaching past the first screen, cement below the cased interval, anything deeper than total depth,
+duplicate well ids, a well completed in an aquifer that was never defined. It also draws the well as entered beside
+the construction section, which catches geometry mistakes faster than reading the numbers back. None of that replaces
+the generator: `Intake` in `hydrostudy/schema/intake.py` validates every submission again on import and has the final
+say.
+
+Two ways to get a submission into a project:
+
+```
+# 1. Send to Claude  -> stored in the artifact's database; ask Claude to import it, which runs:
+.venv/bin/hydrostudy import-intake projects/<slug> <submission>.json
+
+# 2. Save file       -> the JSON lands in your downloads; pass it to the same command
+.venv/bin/hydrostudy import-intake projects/<slug> ~/Downloads/<slug>.intake.json
+```
+
+`import-intake` validates the submission, writes `intake.yaml` with a header recording which submission it came from,
+and scaffolds `review.yaml`, `data/manifest.yaml` and the two CSV headers if they are absent. It refuses to overwrite
+an existing `intake.yaml` without `--force`. Data files and manifest sources are still yours to supply; the form
+collects the well design, not the District export or the water-quality records.
+
+"Load Black Oak example" fills the sheet with the published figures from the 2023 Black Oak submittal so a new user can
+see a completed sheet. It is training material, not a well: a banner says so, the submission is stamped as example
+data, and the sheet must be cleared before real entry.
+
+To change what the form collects, edit the `field-spec` JSON block inside `web/intake_form.html`. The page renders from
+that block and `tests/test_intake_form.py` reads the same block, so a required field added to the schema without a
+control fails the test rather than failing silently on the next submission. Post-drilling `as_built` capture is
+deliberately excluded: it is LAS logs and test CSVs, which belong with the file drop.
