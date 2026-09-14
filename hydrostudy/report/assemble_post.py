@@ -4,6 +4,7 @@ from __future__ import annotations
 
 from pathlib import Path
 
+from hydrostudy.districts.status import spacing_basis_sentence
 from hydrostudy.reference import load_reference
 from hydrostudy.report.assemble import LintError, _env, _letterhead, _template
 from hydrostudy.report.context import scenario_groups
@@ -143,6 +144,9 @@ def build_post_report(project, pdf: bool = True, strict_lint: bool = True) -> di
     doc.heading("Appendix B. Data sources and provenance", 1)
     prov = A["provenance"]
     doc.para(f"Report generated with hydrostudy version {prov['hydrostudy_version']} on {prov['generated_at']}. District rules: {prov['district_rules']['version']} (verified {prov['district_rules']['verified_on']}). TCEQ limits: {prov['tceq_limits']['version']}.", size=9)
+    basis = spacing_basis_sentence(prov["district_rules"])
+    if basis:
+        doc.para(basis, size=9)
     doc.table("B-1", "Input data files", ["Key", "File", "Source", "Retrieved", "Rows", "SHA-256 (first 12)"],
               [[f["key"], Path(f["path"]).name, f["source"], f["retrieved"], f["rows"] if f["rows"] is not None else "", (f["sha256"] or "")[:12]] for f in prov["files"]], font_pt=7.5)
     doc.heading("Appendix C. Aquifer-test data", 1)

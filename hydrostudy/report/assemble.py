@@ -10,6 +10,7 @@ import yaml
 from jinja2 import Environment, StrictUndefined
 
 from hydrostudy.analysis.theis import theis_drawdown
+from hydrostudy.districts.status import spacing_basis_sentence
 from hydrostudy.reference import load_reference
 from hydrostudy.report.context import build_context, scenario_groups
 from hydrostudy.report.docx_builder import PLACEHOLDER_RE, DocBuilder
@@ -211,6 +212,9 @@ def build_report(project, pdf: bool = True, strict_lint: bool = True) -> dict:
     doc.heading("Appendix B. Data sources and provenance", 1)
     prov = A["provenance"]
     doc.para(f"Report generated with hydrostudy version {prov['hydrostudy_version']} on {prov['generated_at']}. District rules: {prov['district_rules']['version']} (verified {prov['district_rules']['verified_on']}). TCEQ limits: {prov['tceq_limits']['version']}.", size=9)
+    basis = spacing_basis_sentence(prov["district_rules"])
+    if basis:
+        doc.para(basis, size=9)
     doc.table("B-1", "Input data files", ["Key", "File", "Source", "Retrieved", "Rows", "SHA-256 (first 12)"],
               [[f["key"], Path(f["path"]).name, f["source"], f["retrieved"], f["rows"] if f["rows"] is not None else "", (f["sha256"] or "")[:12]] for f in prov["files"]], font_pt=7.5)
     doc.heading("Appendix C. Verification of the analytical solution", 1)

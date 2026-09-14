@@ -2,6 +2,8 @@
 
 from __future__ import annotations
 
+from hydrostudy.districts.status import AUTHORITATIVE_SOURCES
+
 
 def collect_flags(intake, review, aquifer_params, spacing, scenarios, pumping_levels, hydrography, wq, district_id="lsgcd") -> list[dict]:
     flags = []
@@ -31,9 +33,19 @@ def collect_flags(intake, review, aquifer_params, spacing, scenarios, pumping_le
                 f"(map IDs {[x['map_id'] for x in w['same_system_inside']]}); confirm treatment with the District.")
     st = spacing.get("rule_status") or {}
     if any(w.get("provisional") for w in spacing["wells"]):
-        note = st.get("spacing_source_note") or "The spacing multiplier was not read from the District's rules document."
+        if st.get("spacing_source") in AUTHORITATIVE_SOURCES and st.get("spacing_stale"):
+            note = (f"The spacing rule was last verified on {st.get('spacing_verified_on')}, which is outside the "
+                    "re-check window, so it is treated as unconfirmed until it is checked again.")
+        else:
+            note = st.get("spacing_source_note") or "The spacing multiplier was not read from the District's rules document."
         add("review", "SPACING_RULE_UNVERIFIED", "Spacing distances are provisional: " + note
             + " The report states the distance used and asks the reviewer to confirm it rather than asserting compliance.")
+    elif st.get("spacing_source") == "operator_attested":
+        who = st.get("attested_by") or "an unnamed operator"
+        when = st.get("attested_on") or st.get("spacing_verified_on")
+        add("info", "SPACING_RULE_ATTESTED", f"The spacing multiplier is stated on the attestation of {who}"
+            + (f" ({when})" if when else "") + " rather than a reading of the District Rules. The basis is recorded in "
+            "the report's provenance note; reading the Rules supersedes it.")
     if st.get("stale") and district_id != "generic":
         if st.get("verified_on"):
             add("review", "DISTRICT_RULES_STALE", f"District rules were last verified on {st['verified_on']}, which is outside "

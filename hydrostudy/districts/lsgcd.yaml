@@ -23,11 +23,15 @@ report_threshold_gpm: 700          # system aggregate capacity from the same Dis
 threshold_note: "A hydrogeological report is required for a new well or well system with aggregate capacity of 700 gpm or greater, for increases of existing wells to 700 gpm or greater, and for spacing exceptions (Guidelines I.B)."
 spacing:
   rule_reference: "LSGCD Rule 3.3 (verify current multipliers)"
-  # These multipliers were read back from consultant reports the District accepted in 2023, NOT from the District
-  # Rules document, which this project has never been able to retrieve. Until someone reads Rule 3.3 and sets this to
-  # primary, the report qualifies every spacing conclusion and the reviewer is asked to confirm the distance.
-  source: derived
-  source_note: "Multipliers were reconstructed from hydrogeological reports the District accepted in 2023, not read from the District Rules. Confirm the current multiplier in LSGCD Rule 3.3 before submittal."
+  # These multipliers were read back from consultant reports the District accepted in 2023. They have NOT been read
+  # out of the District Rules document, which this project has never been able to retrieve. They are carried as
+  # operator_attested rather than derived because the operator named below, who drills and permits in this district,
+  # confirms they are current. Reading Rule 3.3 supersedes this: set source to primary and update verified_on.
+  # If the attestation ages past rules.recheck_after_days the qualifier returns on its own.
+  source: operator_attested
+  attested_by: "Samuel Ballard, Owner, Ballard Water Well Company"
+  attested_on: "2026-09-14"
+  source_note: "Multipliers were reconstructed from hydrogeological reports the District accepted in 2023 and confirmed as current by the operator named in attested_by. They were not read from the District Rules; supersede with source: primary once LSGCD Rule 3.3 is read."
   well_to_well:
     - aquifers: [Chicot, Evangeline]
       ft_per_gpm: 2.0

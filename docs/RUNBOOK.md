@@ -161,33 +161,47 @@ parameter maps the consultants include.
 ## G. District rules: what is verified and what is not
 
 The spacing multipliers in `hydrostudy/districts/lsgcd.yaml` were read back out of hydrogeological reports the District
-accepted in 2023. They reproduce those reports exactly, which is good evidence they were right then. They are not the
-District Rules, and nobody on this project has read Rule 3.3.
+accepted in 2023. Nobody on this project has read Rule 3.3. Samuel, who drills and permits in this district, confirms
+the rule is unchanged, and that is what the rule file now records.
 
-So the tool does not claim otherwise. Each district file declares where its numbers came from:
+Each district file declares where its numbers came from, in three tiers:
+
+| `source` | What it means | How the report states a spacing distance |
+|---|---|---|
+| `primary` | read from a document the District published | as the District's requirement |
+| `operator_attested` | confirmed current by a named person with standing in the district, on a date | as the District's requirement, with the attestation named in the provenance note |
+| `derived` or `unknown` | reconstructed from something else, or unknown | as the distance applied, with the reviewer asked to confirm the multiplier |
+
+Supporting fields:
 
 | Field | Meaning |
 |---|---|
-| `rules.source: primary` | read from a document the District published |
-| `rules.source: derived` | reconstructed from other sources, such as accepted submittals |
-| `spacing.source` | same, for the spacing multipliers specifically; falls back to `rules.source` |
-| `rules.verified_on` | the date someone last checked it against the source |
-| `rules.recheck_after_days` | how long that check stays good |
+| `rules.verified_on` | when someone last checked the rule file against its source |
+| `spacing.verified_on` | same, for the spacing multipliers alone; overrides the above for that scope |
+| `spacing.attested_by` / `attested_on` | who attested and when, required for `operator_attested` |
+| `rules.recheck_after_days` | how long any of that stays good (default 180) |
 
-A spacing distance is quoted as the District's requirement only when `spacing.source` is `primary` and the
-verification is inside the re-check window. Otherwise the report states the distance the analysis applied, asks the
-reviewer to confirm the multiplier, and the spacing checklist item reports as needing professional input. The
-arithmetic is identical either way. Only the claim changes.
+Two things follow. **Every tier expires.** An attestation and a reading of the guidelines age on separate clocks, and
+when the spacing scope ages past the window the qualifier comes back on its own, along with a flag saying it expired
+rather than that the source is missing. **The arithmetic never changes.** Only the strength of the claim does, and a
+conflicting well inside the radius is a conflict under every tier.
 
-To clear this for Lone Star:
+### Recording an attestation
 
-1. Get the current District Rules from LSGCD, and read the well spacing rule.
-2. If the multipliers still match, set `spacing.source: primary`, update `rules.verified_on` to today, and put the rule
-   number and adoption date in `rules.version`. If they do not match, correct the `ft_per_gpm` values first. Do not edit
-   any of this from a summary, a search result or a phone call. Use the rules document.
-3. Run `.venv/bin/pytest`. The Black Oak regression test asserts the report asks rather than asserts, so it will fail
-   once the rules are primary. That failure is the reminder to update the expected wording, not a defect.
-4. Re-run the affected projects. The flag and the extra placeholder disappear.
+Use it when someone who actually works in the district confirms a rule, and name them. `attested_by` should be a person
+and their role, not a company alone, because the sealing professional may need to ask them. Never record an attestation
+from a summary, a search result, or a recollection you cannot attribute.
 
-Do the same for any new district file. A district whose spacing rule you have not read should keep `source: derived`
-(or `unknown`) so that every report it produces carries the qualifier.
+### Promoting to primary
+
+1. Get the current District Rules from LSGCD and read the well spacing rule.
+2. If the multipliers still match, set `spacing.source: primary`, set `spacing.verified_on` to today, and put the rule
+   number and adoption date in `rules.version`. Drop `attested_by` and `attested_on`, which no longer carry the claim.
+   If they do not match, correct the `ft_per_gpm` values first and tell Samuel, because reports already issued used the
+   old numbers.
+3. Run `.venv/bin/pytest`. Tests assert the attestation appears in the report's provenance note, so they will fail once
+   the source is primary. That failure is the reminder to update the expected wording, not a defect.
+4. Re-run the affected projects. The provenance sentence and the informational flag disappear.
+
+Do the same for any new district. A district whose spacing rule nobody has read and nobody can attest to should stay
+`derived`, so every report it produces carries the qualifier.
