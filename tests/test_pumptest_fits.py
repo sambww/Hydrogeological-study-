@@ -60,7 +60,7 @@ def test_recovery_fit_still_works_on_a_real_series():
 def test_a_recovery_series_is_found_from_t_since_stop_when_no_phase_column_exists():
     """`phase` is documented as optional, so a recovery series must not go unanalysed without it."""
     series = Series(elapsed_min=[10, 20, 30, 40, 50], drawdown_ft=[30, 31, 20, 10, 5],
-                        t_since_stop_min=[np.nan, np.nan, 5, 15, 25])
+                    t_since_stop_min=[np.nan, np.nan, 5, 15, 25])
     rec = series.recovery()
     assert rec is not None
     assert rec.n == 3
