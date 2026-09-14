@@ -21,6 +21,11 @@ Use the `/hydro-report` skill (`.claude/skills/hydro-report/SKILL.md`) to walk a
 - Theis superposition per aquifer (`analysis/theis.py`, `analysis/scenarios.py`); wells in other aquifers get "not applicable".
 - Pumped-well drawdown is evaluated at `r_w_ft` (default: borehole radius across the screen). Consultants have used 0.5 and 1.0 ft.
 - Opinions and conclusions live in `review.yaml`; when null the report shows highlighted `[P.G. TO PROVIDE: ...]` placeholders.
+  `hydrostudy review-sheet <project>` generates `build/review_sheet.html` from that project's build for the reviewer to
+  fill, and `hydrostudy import-review` writes their submission back (`review_sheet.py`, `review_import.py`).
+- Reviewer prose is untrusted input to the numbers lint: `report/lint.py` excludes `opinions` and `reviewer` from the
+  allowed set (`UNTRUSTED_CONTEXT_KEYS`), so a hand-typed figure in an opinion cannot whitelist itself. Never add those
+  keys back, and never widen the allowed set to make a reviewer's paragraph build.
 - District rules live in `hydrostudy/districts/*.yaml` with a `source` in three tiers: `primary` (read from a
   District-published document), `operator_attested` (confirmed current by a named person, with `attested_by` and
   `attested_on`) and `derived`/`unknown` (reconstructed). The first two let the narrative state a spacing distance as
@@ -31,6 +36,8 @@ Use the `/hydro-report` skill (`.claude/skills/hydro-report/SKILL.md`) to walk a
 - The three pre-drilling `examples/` are transcriptions of public submittals and are the regression baseline (`tests/`);
   `examples/black_oak_well_2_post` uses SYNTHETIC test data (see its manifest) to exercise the post-drilling mode.
 - Post-drilling mode (`lsgcd_post_drilling`): `analysis/asbuilt.py`, `analysis/pumptest.py`, `report/assemble_post.py`.
+- Web sheets share their plumbing in `hydrostudy/submission.py` (pruning, form metadata, header, overwrite guard);
+  both importers validate by constructing the schema model and write the submitter's own input, never a dumped model.
 - The web intake sheet (`web/intake_form.html`, published as an Artifact) renders from its own `field-spec` JSON block;
   `tests/test_intake_form.py` reads that block and fails if a required schema field has no control. Submissions are
   JSON in the shape of intake.yaml and become a project via `hydrostudy import-intake` (`intake_import.py`), which is

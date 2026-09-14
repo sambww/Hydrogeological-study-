@@ -32,7 +32,8 @@ hydrostudy = "hydrostudy.cli:main"
 include = ["hydrostudy*"]
 
 [tool.setuptools.package-data]
-hydrostudy = ["districts/*.yaml", "reference/*.yaml", "report/narrative/*.j2", "report/static/*.md"]
+hydrostudy = ["districts/*.yaml", "reference/*.yaml", "report/narrative/*.j2", "report/static/*.md",
+              "report/sheets/*.html"]
 
 [tool.pytest.ini_options]
 testpaths = ["tests"]

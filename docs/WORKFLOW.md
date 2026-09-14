@@ -20,7 +20,9 @@ First time on a machine: follow `docs/RUNBOOK.md` section A (setup and `hydrostu
    - hydrography notes and the springs search result in the manifest
 4. **Validate**: `hydrostudy validate projects/<slug>`.
 5. **Run**: `hydrostudy run projects/<slug>`. Read the console summary: scenario results, checklist, placeholders, flags.
-6. **Reviewer pass**: the P.G./P.E. fills `review.yaml` (`opinions`, any `decisions` overrides, reviewer identity),
+6. **Reviewer pass**: build the reviewer's sheet with `hydrostudy review-sheet projects/<slug>` and have Claude
+   publish it, or let the P.G./P.E. fill `review.yaml` directly (`opinions`, any `decisions` overrides, reviewer
+   identity). Import a sheet submission with `hydrostudy import-review projects/<slug> <submission>.json`,
    confirms aquifer identification and parameters with District staff, then re-runs. Set `reviewer.status: final`
    and bump `report.revision.number` for the sealed version.
 7. **Submit** the sealed DOCX/PDF with the District application. After drilling, prepare the post-drilling

@@ -30,8 +30,20 @@ def collect_allowed(obj, acc: set | None = None) -> set:
     return acc
 
 
+#: Context keys holding prose a person typed rather than anything the pipeline computed. Their numbers must never
+#: enter the allowed set, or they whitelist themselves: a reviewer's opinion is precisely where a hand-typed figure
+#: would otherwise reach a sealed report unchecked, which is the case this lint exists to prevent.
+UNTRUSTED_CONTEXT_KEYS = ("opinions", "reviewer")
+
+
+def allowed_number_set(context: dict, extra_allowed: set | None = None) -> set:
+    """Every number the narrative may legitimately contain, from the computed context only."""
+    computed = {k: v for k, v in context.items() if k not in UNTRUSTED_CONTEXT_KEYS}
+    return collect_allowed(computed) | EQUATION_CONSTANTS | (extra_allowed or set())
+
+
 def lint_sections(sections: dict[str, str], context: dict, extra_allowed: set | None = None) -> dict:
-    allowed = collect_allowed(context) | EQUATION_CONSTANTS | (extra_allowed or set())
+    allowed = allowed_number_set(context, extra_allowed)
     problems = []
     for name, text in sections.items():
         for tok in sorted(numbers_in(text)):

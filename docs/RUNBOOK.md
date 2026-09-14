@@ -130,17 +130,32 @@ parameter maps the consultants include.
 
 ## E. Reviewer hand-off
 
-1. Send the sealing P.G. or P.E. the DOCX, the PDF and the placeholder list. They edit `review.yaml`: their identity
-   and license, `decisions` (T, S, effective radius, thresholds) and `opinions` (conclusion, aquifer identification,
-   recharge features, confinement, water quality, parameter selection, spacing).
-2. Re-run with their `review.yaml`. For the sealed version set `reviewer.status: final` and bump
-   `report.revision.number`; the banner disappears and the review-log appendix is dropped. Final files are never
-   overwritten.
-3. Confirm the spacing multiplier. Until someone reads it out of the District Rules, the report asks the reviewer to
+1. Build the reviewer's sheet and send it with the DOCX and the PDF:
+   ```
+   .venv/bin/hydrostudy review-sheet projects/<slug>     # -> build/review_sheet.html
+   ```
+   Ask Claude to publish it, then send the reviewer that link. The sheet is generated from the draft they are holding,
+   so it shows each placeholder with the guideline item it answers and the draft wording it replaces, the parameters a
+   decision would override, what the pipeline flagged, and the simulated drawdowns. It collects everything
+   `review.yaml` holds: identity and licence, `decisions` (T, S, evaluation radius, thresholds) and the eight
+   `opinions`. A reviewer who would rather edit YAML still can; the sheet is an alternative, not a gate.
+2. **The sheet checks their figures as they type.** The report rejects any number it cannot trace to its own
+   calculations, so an opinion citing an invented figure fails the build. The sheet carries that draft's allowed
+   numbers and names any figure that is not among them, while the reviewer is still at the keyboard. If they set a
+   parameter override the sheet says so too, because the drawdowns it shows were computed before that override and
+   must be re-checked against the rebuilt report.
+3. Import what they send back and re-run:
+   ```
+   .venv/bin/hydrostudy import-review projects/<slug> <submission>.json
+   .venv/bin/hydrostudy run projects/<slug>
+   ```
+   For the sealed version set `reviewer.status: final` and bump `report.revision.number`; the banner disappears and the
+   review-log appendix is dropped. Final files are never overwritten.
+4. Confirm the spacing multiplier. Until someone reads it out of the District Rules, the report asks the reviewer to
    confirm it rather than stating that the well complies. See section G.
-4. Settle the issuing-entity question before the first submittal: a sealed geoscience report is generally issued by a
+5. Settle the issuing-entity question before the first submittal: a sealed geoscience report is generally issued by a
    TBPG-registered firm. `report.issuing_firm` switches the letterhead between Ballard and the reviewer's firm.
-5. After drilling, copy the project, set `mode: lsgcd_post_drilling`, fill `as_built` (construction, static level,
+6. After drilling, copy the project, set `mode: lsgcd_post_drilling`, fill `as_built` (construction, static level,
    pump, logs with LAS files, test CSVs, field parameters) and run again for the Section III submittal. See
    `docs/WORKFLOW.md`.
 
@@ -154,6 +169,8 @@ parameter maps the consultants include.
 | well listed with `N/A` depth or aquifer `*` | District export lacks completion data | acceptable; the aquifer is inferred from depth and footnoted, or fill from the TWDB driller's report |
 | `RATE_VARIATION` flag on a post-drilling test | pumping rate varied more than 5 percent | acceptable if noted; the reviewer judges validity |
 | `reach ...` WARN in `doctor --network` | firewall/proxy | run from another network or supply the files manually per `docs/DATA_SOURCES.md` |
+| `LINT FAILURE ... number` naming a figure from an opinion | the reviewer cited a number the report does not compute, or quoted a figure from before their own parameter override | take the figure from the tables in the review sheet, write it in words, or rebuild first and re-check; the review sheet warns about both before submission |
+| review sheet says "no draft to review" | the project has not been built yet | run `hydrostudy run <project>` first; the sheet is generated from the draft |
 | `SPACING_RULE_UNVERIFIED` flag | the spacing multiplier was never read from the District Rules | expected today; see section G to clear it permanently |
 | `DISTRICT_RULES_STALE` flag | the rule file has not been re-verified inside its re-check window | re-read the District Rules and update `verified_on`, per section G |
 | `GAM_MISMATCH` flag | stated T differs from the model by more than 25 percent | keep the site-test value if you have one and let the reviewer justify it; otherwise adopt the model value |

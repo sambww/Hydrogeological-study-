@@ -15,7 +15,7 @@ from hydrostudy.reference import load_reference
 from hydrostudy.report.context import build_context, scenario_groups
 from hydrostudy.report.docx_builder import PLACEHOLDER_RE, DocBuilder
 from hydrostudy.report.equations import render_equations
-from hydrostudy.report.lint import lint_sections, numbers_in
+from hydrostudy.report.lint import allowed_number_set, lint_sections, numbers_in
 from hydrostudy.report.pdf import convert_to_pdf
 from hydrostudy.units import fmt_ft
 
@@ -79,6 +79,9 @@ def build_report(project, pdf: bool = True, strict_lint: bool = True) -> dict:
     lint = lint_sections(sections, ctx, extra_allowed)
     if strict_lint and not lint["ok"]:
         raise LintError(f"narrative contains numbers not present in the computed context: {lint['problems']}")
+    # The same set the lint judges against, carried out with the artifacts so the review sheet can warn a reviewer
+    # about a number the build would later reject, instead of letting them find out from a failed build.
+    allowed_numbers = sorted(allowed_number_set(ctx, extra_allowed))
 
     intake, review = project.intake, project.review
     build_dir = project.build_dir
@@ -242,7 +245,8 @@ def build_report(project, pdf: bool = True, strict_lint: bool = True) -> dict:
     doc.save(out_docx)
     out_pdf = convert_to_pdf(out_docx) if pdf else None
     return {"docx": str(out_docx), "pdf": str(out_pdf) if out_pdf else None, "placeholders": placeholders,
-            "lint": lint, "figures": len(fn), "tables": len(tn), "sections": list(sections.keys())}
+            "lint": lint, "allowed_numbers": allowed_numbers, "figures": len(fn), "tables": len(tn),
+            "sections": list(sections.keys())}
 
 
 def g_scenarios(project, gkey):

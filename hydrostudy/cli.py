@@ -52,6 +52,42 @@ def cmd_import_intake(args):
     return 0
 
 
+def cmd_import_review(args):
+    from pydantic import ValidationError
+
+    from hydrostudy.review_import import load_payload, write_review
+    try:
+        payload = load_payload(args.payload)
+    except (OSError, ValueError) as e:
+        print(f"cannot read submission: {e}", file=sys.stderr)
+        return 2
+    try:
+        target = write_review(args.project_dir, payload, force=args.force)
+    except FileExistsError as e:
+        print(f"{e}. Re-run with --force to overwrite.", file=sys.stderr)
+        return 2
+    except ValidationError as e:
+        print("submission is not a valid review:")
+        for err in e.errors():
+            loc = ".".join(str(x) for x in err["loc"])
+            print(f"  - {loc}: {err['msg']}")
+        return 1
+    print(f"Wrote {target}. Next: hydrostudy run {args.project_dir}")
+    return 0
+
+
+def cmd_review_sheet(args):
+    from hydrostudy.review_sheet import SheetNotReady, render_sheet
+    try:
+        target = render_sheet(args.project_dir, args.out)
+    except SheetNotReady as e:
+        print(str(e), file=sys.stderr)
+        return 2
+    print(f"Wrote {target}. Publish it for the reviewer, then import their submission with: "
+          f"hydrostudy import-review {args.project_dir} <submission>.json")
+    return 0
+
+
 def cmd_validate(args):
     from pydantic import ValidationError
 
@@ -148,6 +184,15 @@ def main(argv=None):
     s.add_argument("payload", help="path to the submission JSON saved from the form or read out of the artifact database")
     s.add_argument("--force", action="store_true", help="overwrite an existing intake.yaml")
     s.set_defaults(fn=cmd_import_intake)
+    s = sub.add_parser("import-review", help="write review.yaml from a review sheet submission (JSON)")
+    s.add_argument("project_dir")
+    s.add_argument("payload", help="path to the submission JSON saved from the sheet or read out of the artifact database")
+    s.add_argument("--force", action="store_true", help="overwrite an existing review.yaml")
+    s.set_defaults(fn=cmd_import_review)
+    s = sub.add_parser("review-sheet", help="build the reviewer's sheet for a project that has been run")
+    s.add_argument("project_dir")
+    s.add_argument("--out", default=None, help="write somewhere other than build/review_sheet.html")
+    s.set_defaults(fn=cmd_review_sheet)
     s = sub.add_parser("validate", help="validate intake.yaml and review.yaml")
     s.add_argument("project_dir")
     s.set_defaults(fn=cmd_validate)
