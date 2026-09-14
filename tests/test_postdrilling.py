@@ -215,25 +215,47 @@ def test_the_comparison_table_names_the_well(post_built):
         assert all(r[1] and r[1] != "{}" for r in rows)
 
 
-def test_the_interference_narrative_only_claims_storativity_is_unchanged_when_it_is():
-    """A test-derived storativity is substituted into the re-run, so the wording must follow what actually changed."""
+def _rendered_rerun(applied, adopted=None):
+    """Render the re-run paragraph from what the pipeline recorded as actually applied."""
     from jinja2 import Environment, StrictUndefined
 
     from hydrostudy.report.assemble import _template
+    from hydrostudy.report.context_post import _rerun_context
 
+    ab = {"applied": applied}
+    ad = adopted or {"t_ft2d": 1021.0, "s": 2.1e-4, "s_source": "aquifer test"}
+    ctx = {**_rerun_context(ab, ad, "Well No. 2"), "pre_t": "1,023"}
     tpl = Environment(undefined=StrictUndefined, autoescape=False).from_string(_template("post_interference.j2"))
-    base = {"well_label": "Well No. 2", "adopted_t": "1,021", "pre_t": "1,023", "adopted_s": "2.10 x 10-4"}
-    tab = {"comparison": "Table 7"}
+    return tpl.render(tab={"comparison": "Table 7"}, ab=ctx), ctx
 
-    held = tpl.render(tab=tab, ab={**base, "s_substituted": False,
-                                   "unchanged_inputs": "storativity, rates, annual volume and well locations"})
+
+def test_the_rerun_paragraph_says_storativity_is_unchanged_only_when_it_is():
+    held, ctx = _rendered_rerun({"t_ft2d": {"value": 1021.0, "basis": "measured"}})
+    assert ctx["s_substituted"] is False
     assert "storativity, rates" in held
-    assert "derived from the aquifer test" not in held
+    assert "together with a storativity" not in held
 
-    swapped = tpl.render(tab=tab, ab={**base, "s_substituted": True,
-                                      "unchanged_inputs": "rates, annual volume and well locations"})
-    assert "derived from the aquifer test" in swapped
+    swapped, ctx = _rendered_rerun({"t_ft2d": {"value": 1021.0, "basis": "measured"},
+                                    "s": {"value": 2.1e-4, "basis": "measured"}})
+    assert ctx["s_substituted"] is True
+    assert "together with a storativity" in swapped
     assert "(storativity" not in swapped
+
+
+def test_the_rerun_paragraph_credits_the_reviewer_when_their_decision_was_used():
+    """The reviewer's decision beats the measured value, so the paragraph must not call it the measured one."""
+    text, _ = _rendered_rerun({"t_ft2d": {"value": 2500.0, "basis": "reviewer"}})
+    assert "adopted by the reviewing professional" in text
+    assert "2,500" in text
+    assert "measured at Well No. 2" not in text
+
+
+def test_nothing_substituted_is_not_reported_as_a_substituted_storativity():
+    """s_substituted must follow what was applied, not merely what the test could have yielded."""
+    text, ctx = _rendered_rerun({}, adopted={"t_ft2d": None, "s": 2.1e-4, "s_source": "aquifer test"})
+    assert ctx["s_substituted"] is False
+    assert "storativity" in ctx["unchanged_inputs"]
+    assert "together with a storativity" not in text
 
 
 def test_the_context_reports_storativity_as_held_for_a_single_well_test(post_built):
@@ -243,3 +265,4 @@ def test_the_context_reports_storativity_as_held_for_a_single_well_test(post_bui
     # This example's single-well test cannot yield storativity, so the pre-drilling value stands.
     assert ab["s_substituted"] is False
     assert "storativity" in ab["unchanged_inputs"]
+    assert ab["rerun_t_basis"] == "measured at Well No. 2"

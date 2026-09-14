@@ -78,24 +78,27 @@ class Project:
 
                 from hydrostudy.geo.geometry import distance_to_boundary_ft
                 d = distance_to_boundary_ft(*intake._local_xy[w.id], self.boundary_geom)
-                inside = self.boundary_geom.contains(Point(*intake._local_xy[w.id]))
+                # `covers` rather than `contains`, so a well surveyed exactly on the tract line still counts as on
+                # the tract instead of losing its boundary distance.
+                inside = self.boundary_geom.covers(Point(*intake._local_xy[w.id]))
                 entry["polygon_ft"] = d
                 entry["inside_boundary"] = bool(inside)
-                if not inside:
+                if inside:
+                    if w.nearest_property_boundary_ft is None:
+                        w.nearest_property_boundary_ft = d
+                        entry.update({"ft": d, "source": "boundary polygon"})
+                    elif w.nearest_property_boundary_ft > 0 and abs(d - w.nearest_property_boundary_ft) / w.nearest_property_boundary_ft > 0.10:
+                        boundary_flags.append({"level": "review", "code": "BOUNDARY_DISTANCE_MISMATCH",
+                                               "text": f"{w.label}: intake boundary distance {w.nearest_property_boundary_ft:,.0f} ft differs from the "
+                                                       f"property polygon distance {d:,.0f} ft by more than 10%; intake value used."})
+                elif w.nearest_property_boundary_ft is None:
                     # The polygon is the applicant's tract. A well outside it (an existing system well on another
-                    # parcel) is not that distance from its own property line, and filling it in would feed a
-                    # meaningless figure into the boundary drawdown.
+                    # parcel) is not that distance from its own property line, so the figure is not adopted; the
+                    # 10% cross-check does not apply to it either, for the same reason.
                     boundary_flags.append({
                         "level": "warn", "code": "WELL_OUTSIDE_BOUNDARY",
                         "text": f"{w.label} lies outside the supplied property polygon ({d:,.0f} ft from its edge); "
                                 "its distance to its own property line must be supplied in the intake."})
-                elif w.nearest_property_boundary_ft is None:
-                    w.nearest_property_boundary_ft = d
-                    entry.update({"ft": d, "source": "boundary polygon"})
-                elif w.nearest_property_boundary_ft > 0 and abs(d - w.nearest_property_boundary_ft) / w.nearest_property_boundary_ft > 0.10:
-                    boundary_flags.append({"level": "review", "code": "BOUNDARY_DISTANCE_MISMATCH",
-                                           "text": f"{w.label}: intake boundary distance {w.nearest_property_boundary_ft:,.0f} ft differs from the "
-                                                   f"property polygon distance {d:,.0f} ft by more than 10%; intake value used."})
             boundary_distances[w.id] = entry
         from hydrostudy.data.gam import load_gam_lookup
         gam = load_gam_lookup(self.manifest)
@@ -104,6 +107,9 @@ class Project:
             from hydrostudy.analysis.asbuilt import analyze_as_built
             pre_params = resolve_params(intake, review, gam, apply_review=False)
             as_built = analyze_as_built(self, pre_params)
+            # What the re-run actually uses, so the narrative can describe that rather than assuming the measured
+            # value was applied. Empty when nothing was substituted at all.
+            as_built["applied"] = {}
             if as_built["rerun_interference"] and as_built["adopted"]["t_ft2d"]:
                 aq = as_built["aquifer"]
                 # The measured value seeds the decision; an explicit reviewer decision still wins, because that is
@@ -116,12 +122,14 @@ class Project:
                         continue
                     current = dict(getattr(review.decisions, field) or {})
                     if aq in current:
+                        as_built["applied"][field] = {"value": current[aq], "basis": "reviewer"}
                         boundary_flags.append({
                             "level": "review", "code": "ASBUILT_VALUE_NOT_ADOPTED",
                             "text": f"{aq}: the reviewer's {field} decision is used in place of the value measured at "
                                     f"well {as_built['well_id']}; the measured value is reported for comparison only."})
                         continue
                     setattr(review.decisions, field, {aq: value} | current)
+                    as_built["applied"][field] = {"value": value, "basis": "measured"}
         aquifer_params = resolve_params(intake, review, gam)
 
         # search radius = max(1/2 mile, largest required spacing radius among proposed wells)

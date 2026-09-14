@@ -38,6 +38,32 @@ def assign_numbers_post(project):
     return fignum, tabnum
 
 
+def _rerun_context(ab: dict, adopted: dict, well_label: str) -> dict:
+    """Describe the parameters the re-run interference scenarios actually used.
+
+    The measured transmissivity seeds the re-run, but an explicit reviewer decision takes precedence over it, so the
+    narrative cannot assume the measured value was applied. `applied` is written by the pipeline at the point the
+    substitution is made, and carries where each value came from.
+    """
+    applied = ab.get("applied") or {}
+    t, s = applied.get("t_ft2d"), applied.get("s")
+
+    def basis(entry):
+        return f"measured at {well_label}" if entry["basis"] == "measured" else "adopted by the reviewing professional"
+
+    unchanged = ["rates", "annual volume", "well locations"]
+    if s is None:
+        unchanged.insert(0, "storativity")
+    return {
+        "rerun_t": fmt_int(t["value"]) if t else (fmt_int(adopted["t_ft2d"]) if adopted["t_ft2d"] else "N/A"),
+        "rerun_t_basis": basis(t) if t else f"measured at {well_label}",
+        "s_substituted": s is not None,
+        "rerun_s": fmt_sci(s["value"]) if s else "N/A",
+        "rerun_s_basis": basis(s) if s else "",
+        "unchanged_inputs": _join(unchanged),
+    }
+
+
 def build_post_context(project) -> dict:
     fignum, tabnum = assign_numbers_post(project)
     ctx = build_context(project, numbering=(fignum, tabnum))
@@ -208,12 +234,9 @@ def build_post_context(project) -> dict:
         "test_header": ["Test", "Type", "Rate (gpm)", "Duration (min)", "End drawdown (ft)", "Specific capacity (gpm/ft)", "T, Cooper-Jacob (ft2/day)", "T, Theis match (ft2/day)", "T, recovery (ft2/day)", "Well efficiency at design rate"],
         "adopted_sentence": adopted_sentence, "comparison_sentence": comparison_sentence,
         "adopted_t": fmt_int(ad["t_ft2d"]) if ad["t_ft2d"] else "N/A", "pre_t": fmt_int(cp["t_pre_ft2d"]) if cp else "N/A",
-        # The re-run narrative may only claim storativity is unchanged when it actually is: a test-derived value is
-        # substituted into the scenarios alongside the measured transmissivity.
-        "s_substituted": ad["s_source"] != "GAM (pre-drilling value)",
-        "unchanged_inputs": ("rates, annual volume and well locations" if ad["s_source"] != "GAM (pre-drilling value)"
-                             else "storativity, rates, annual volume and well locations"),
-        "adopted_s": fmt_sci(ad["s"]) if ad["s"] is not None else "N/A",
+        # The re-run narrative describes what the scenarios actually used, which is not always the measured value:
+        # an explicit reviewer decision takes precedence over it, and then nothing was substituted.
+        **_rerun_context(ab, ad, well.label),
         "field_rows": field_rows, "field_sentence": field_sentence, "field_header": ["Time", "Specific conductance (uS/cm)", "Temperature (C)", "pH", "Source"],
         "comparison_rows": comp_rows, "comparison_header": ["Scenario", "Well", "Pre-drilling drawdown (ft)", "As-built drawdown (ft)"],
         "rerun_summary_sentence": rerun_summary, "summary_sentence": summary_sentence,

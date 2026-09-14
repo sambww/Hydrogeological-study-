@@ -20,13 +20,24 @@ def evaluation_radius(test: dict) -> float:
 
 
 def _pumping_points(test: dict):
-    t = np.array(test["series"]["elapsed_min"], dtype=float)
-    s = np.array(test["series"]["drawdown_ft"], dtype=float)
-    ph = test["series"].get("phase")
+    """The drawdown points a fit was made on, with recovery rows excluded however they are marked.
+
+    Mirrors `TestSeries.pumping()`: a series may mark recovery with a `phase` column or only with a time since
+    pumping stopped, and plotting recovery rows against a fit that excluded them misrepresents the fit.
+    """
+    series = test["series"]
+    t = np.array(series["elapsed_min"], dtype=float)
+    s = np.array(series["drawdown_ft"], dtype=float)
+    ph = series.get("phase")
+    tss = series.get("t_since_stop_min")
     if ph:
         m = np.array([str(x).lower() != "recovery" for x in ph])
-        t, s = t[m], s[m]
-    return t, s
+    elif tss is not None:
+        stop = np.array([np.nan if x is None else x for x in tss], dtype=float)
+        m = ~(np.isfinite(stop) & (stop > 0))
+    else:
+        return t, s
+    return t[m], s[m]
 
 
 def render_cooper_jacob(test: dict, path):

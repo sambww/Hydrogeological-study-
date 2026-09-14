@@ -79,7 +79,12 @@ def analyze_as_built(project, pre_params: dict) -> dict:
                "specific_capacity": None, "end_drawdown_ft": None, "duration_min": None, "rate_variation": series.pumping().rate_variation(),
                "series": {"elapsed_min": series.elapsed_min.tolist(), "drawdown_ft": series.drawdown_ft.tolist(),
                           "rate_gpm": None if series.rate_gpm is None else series.rate_gpm.tolist(),
-                          "phase": series.phase}}
+                          "phase": series.phase,
+                          # Exported so the figures can exclude recovery rows on a series that marks them only by
+                          # time since pumping stopped; otherwise they are drawn as drawdown against a fit that
+                          # deliberately excluded them.
+                          "t_since_stop_min": (None if series.t_since_stop_min is None
+                                               else series.t_since_stop_min.tolist())}}
         pu = series.pumping()
         if t.kind in ("constant_rate", "recovery") and t.rate_gpm:
             r_eval = t.observation_well.distance_ft if t.observation_well else t.r_w_ft
