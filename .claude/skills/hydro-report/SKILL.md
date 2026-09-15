@@ -13,6 +13,8 @@ You are helping a water-well contractor produce a DRAFT hydrogeological report t
 - Never invent wells, coordinates, depths, sample results, aquifer parameters or references. If an input is missing,
   ask for it or leave it null so the pipeline flags it.
 - Do not write conclusions or opinions; those belong to the reviewer in `review.yaml`.
+- A real project's intake and data files are committed, and they hold customer and site data. Confirm the
+  repository is private before scaffolding one (`docs/RUNBOOK.md` section D).
 - Do not change a district file's spacing `source`. `primary` requires the rules document itself;
   `operator_attested` requires a named person with standing in that district and the date they confirmed it. Anything
   else stays `derived`, and the report then asks the reviewer to confirm the distance instead of claiming compliance.

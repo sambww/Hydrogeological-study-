@@ -33,6 +33,9 @@ Use the `/hydro-report` skill (`.claude/skills/hydro-report/SKILL.md`) to walk a
   the reviewer to confirm. Every tier expires after `recheck_after_days`, on a per-scope date
   (`districts/status.py`). Re-verify before each submittal; see `docs/RUNBOOK.md` section G.
 - Never overwrite a final report: bump `report.revision.number`.
+- Everything under `projects/<slug>` except `build/` is tracked on purpose: the intake is the record of what
+  went into a sealed report. It therefore carries customer names, addresses, well coordinates and water-quality
+  results, so this repository must stay private. See `docs/RUNBOOK.md` section D before scaffolding a real project.
 - The three pre-drilling `examples/` are transcriptions of public submittals and are the regression baseline (`tests/`);
   `examples/black_oak_well_2_post` uses SYNTHETIC test data (see its manifest) to exercise the post-drilling mode.
 - Post-drilling mode (`lsgcd_post_drilling`): `analysis/asbuilt.py`, `analysis/pumptest.py`, `report/assemble_post.py`.
