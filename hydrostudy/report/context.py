@@ -42,6 +42,8 @@ def assign_numbers(project) -> tuple[dict, dict]:
     figs = project.artifacts["figures"]
     a = project.artifacts["analysis"]
     order = ["location", "wells", "property"] + [f"schematic_{w.id}" for w in project.intake.proposed_wells] + ["strat"]
+    for aq in sorted({w.aquifer for w in project.intake.proposed_wells}):
+        order += [f"gam_{prm}_{aq}" for prm in ("t", "k", "s") if f"gam_{prm}_{aq}" in figs]
     order += [k for k in ("wq_tds", "wq_fe", "wq_as", "wq_ra_combined") if k in figs]
     for sc in a["scenarios"]:
         for aq in sc["results_by_aquifer"]:
@@ -76,11 +78,11 @@ def scenario_groups(project) -> list[dict]:
     return groups
 
 
-def build_context(project) -> dict:
+def build_context(project, numbering=None) -> dict:
     intake, review, district = project.intake, project.review, project.district
     A = project.artifacts
     an, geo, nearby, wq, hydro = A["analysis"], A["geo"], A["nearby_wells"], A["water_quality"], A["hydrography"]
-    fignum, tabnum = assign_numbers(project)
+    fignum, tabnum = numbering if numbering else assign_numbers(project)
     figs = A["figures"]
     names = {w.id: w.label for w in intake.all_wells}
 
@@ -153,19 +155,31 @@ def build_context(project) -> dict:
     # ---- spacing
     sp_ctx = []
     for w in an["spacing"]["wells"]:
-        if w["rule_available"]:
+        if w["rule_available"] and not w["provisional"]:
             rule = (f"District spacing rules for wells completed in the {w['aquifer']} Aquifer require a minimum distance to other non-exempt wells of "
                     f"{w['ft_per_gpm']:g} ft multiplied by the maximum allowable pumping rate; for the {fmt_int(w['max_rate_gpm'])}-gpm rate of proposed {wn(w['well_id'])} "
                     f"this is {fmt_int(w['required_spacing_ft'])} ft.")
+        elif w["rule_available"]:
+            # The multiplier was not read from the District's own rules document, so it is described as the distance
+            # this analysis applied rather than as the District's requirement, and the reviewer is asked to confirm it.
+            rule = (f"The spacing distance applied to proposed {wn(w['well_id'])}, completed in the {w['aquifer']} Aquifer, is "
+                    f"{w['ft_per_gpm']:g} ft multiplied by the maximum allowable pumping rate, which for its "
+                    f"{fmt_int(w['max_rate_gpm'])}-gpm rate gives {fmt_int(w['required_spacing_ft'])} ft. "
+                    "[REVIEWER TO CONFIRM: the current District spacing multiplier for this aquifer; the value used here was "
+                    "taken from previously accepted submittals rather than from the District Rules.]")
         elif district["id"] == "generic":
             rule = f"No groundwater-district spacing rule is configured for this site; the distances from proposed {wn(w['well_id'])} to the nearest known wells are listed in {tab('nearby')} for reference."
         else:
             rule = f"[REVIEWER TO PROVIDE: no spacing multiplier is configured for the {w['aquifer']} Aquifer; state the District rule and the required distance for {wn(w['well_id'])}.]"
-        if w["rule_available"] and w["complies"]:
+        if w["rule_available"] and w["complies"] and not w["provisional"]:
             result = f"According to the District well database, no other registered or permitted wells are located within {fmt_int(w['required_spacing_ft'])} ft of proposed {wn(w['well_id'])}; the proposed location complies with the spacing rule."
+        elif w["rule_available"] and w["complies"]:
+            result = (f"According to the District well database, no other registered or permitted wells are located within "
+                      f"{fmt_int(w['required_spacing_ft'])} ft of proposed {wn(w['well_id'])}. Subject to confirmation of the "
+                      "multiplier above, the proposed location meets this spacing distance.")
         elif w["rule_available"]:
-            names = _join([f"Map ID {c['map_id']} ({c['owner']}, {fmt_int(c['distance_ft'])} ft)" for c in w["conflicts"]])
-            result = f"The following registered or permitted wells are located within {fmt_int(w['required_spacing_ft'])} ft of proposed {wn(w['well_id'])}: {names}. [REVIEWER TO PROVIDE: spacing exception request and supporting impact documentation.]"
+            conflict_names = _join([f"Map ID {c['map_id']} ({c['owner']}, {fmt_int(c['distance_ft'])} ft)" for c in w["conflicts"]])
+            result = f"The following registered or permitted wells are located within {fmt_int(w['required_spacing_ft'])} ft of proposed {wn(w['well_id'])}: {conflict_names}. [REVIEWER TO PROVIDE: spacing exception request and supporting impact documentation.]"
         else:
             result = ""
         same = ""
@@ -233,8 +247,13 @@ def build_context(project) -> dict:
             if d.get("mismatch_note"):
                 deriv += f" [REVIEWER TO CONFIRM: {d['mismatch_note']}]"
         gam_note = ""
+        gam_figs = [fig(k) for k in fignum if k.startswith("gam_") and k.endswith("_" + name)]
+        if gam_figs:
+            gam_note = f"{_join(gam_figs)} show the model's transmissivity, hydraulic conductivity and storativity in the cells surrounding the site. "
+        if p.get("gam_note"):
+            gam_note += p["gam_note"][0].upper() + p["gam_note"][1:] + ". "
         if district.get("gam", {}).get("current_adopted"):
-            gam_note = (f"The District's guidelines reference the {district['gam']['cited_in_guidelines']}; the currently adopted regional model is the {district['gam']['current_adopted']}. "
+            gam_note += (f"The District's guidelines reference the {district['gam']['cited_in_guidelines']}; the currently adopted regional model is the {district['gam']['current_adopted']}. "
                         "The model version used for the parameters is stated in the table, and the selection should be confirmed with District staff.")
         aq_ctx.append({"name": name, "depth_sentence": depth_sentence, "thickness_sentence": thick_sentence, "confinement_sentence": conf_sentence,
                        "params_sentence": params_sentence, "derivation_sentence": deriv.strip(), "gam_note": gam_note})

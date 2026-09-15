@@ -10,11 +10,12 @@ import yaml
 from jinja2 import Environment, StrictUndefined
 
 from hydrostudy.analysis.theis import theis_drawdown
+from hydrostudy.districts.status import spacing_basis_sentence
 from hydrostudy.reference import load_reference
 from hydrostudy.report.context import build_context, scenario_groups
 from hydrostudy.report.docx_builder import PLACEHOLDER_RE, DocBuilder
 from hydrostudy.report.equations import render_equations
-from hydrostudy.report.lint import lint_sections, numbers_in
+from hydrostudy.report.lint import allowed_number_set, lint_sections, numbers_in
 from hydrostudy.report.pdf import convert_to_pdf
 from hydrostudy.units import fmt_ft
 
@@ -64,6 +65,8 @@ def build_report(project, pdf: bool = True, strict_lint: bool = True) -> dict:
              "system_interference": "system_interference.j2", "pumping_level": "pumping_level.j2",
              "summary": "summary_feasibility.j2" if feas else "summary.j2"}
     for name, fname in names.items():
+        if name == "system_interference" and not ctx["si"]:
+            continue
         sections[name] = env.from_string(_template(fname)).render(**ctx)
     for g in ctx["groups"]:
         sections[f"group_{g['key']}"] = env.from_string(_template("scenario_group.j2")).render(g=g, tab={"summary": ctx["tab"][f"summary_{g['key']}"], "edges": ctx["tab"][f"edges_{g['key']}"], "impacts": ctx["tab"][f"impacts_{g['key']}"]}, **{k: v for k, v in ctx.items() if k != "tab"})
@@ -76,6 +79,9 @@ def build_report(project, pdf: bool = True, strict_lint: bool = True) -> dict:
     lint = lint_sections(sections, ctx, extra_allowed)
     if strict_lint and not lint["ok"]:
         raise LintError(f"narrative contains numbers not present in the computed context: {lint['problems']}")
+    # The same set the lint judges against, carried out with the artifacts so the review sheet can warn a reviewer
+    # about a number the build would later reject, instead of letting them find out from a failed build.
+    allowed_numbers = sorted(allowed_number_set(ctx, extra_allowed))
 
     intake, review = project.intake, project.review
     build_dir = project.build_dir
@@ -129,6 +135,8 @@ def build_report(project, pdf: bool = True, strict_lint: bool = True) -> dict:
     doc.paragraphs(sections["site"])
     doc.table(tn["parameters"], "Aquifer parameters adopted for the interference simulations", ctx["parameters"]["header"], ctx["parameters"]["rows"], font_pt=8,
               note="** Hydraulic conductivity derived as transmissivity divided by aquifer thickness. GAM = TWDB groundwater availability model.")
+    for k in sorted((k for k in fn if k.startswith("gam_")), key=lambda k: fn[k]):
+        doc.figure(fn[k], figs[k]["caption"], figs[k]["path"], 5.8)
 
     # ---- 5 water quality
     doc.heading("5. Water Quality", 1)
@@ -207,6 +215,9 @@ def build_report(project, pdf: bool = True, strict_lint: bool = True) -> dict:
     doc.heading("Appendix B. Data sources and provenance", 1)
     prov = A["provenance"]
     doc.para(f"Report generated with hydrostudy version {prov['hydrostudy_version']} on {prov['generated_at']}. District rules: {prov['district_rules']['version']} (verified {prov['district_rules']['verified_on']}). TCEQ limits: {prov['tceq_limits']['version']}.", size=9)
+    basis = spacing_basis_sentence(prov["district_rules"])
+    if basis:
+        doc.para(basis, size=9)
     doc.table("B-1", "Input data files", ["Key", "File", "Source", "Retrieved", "Rows", "SHA-256 (first 12)"],
               [[f["key"], Path(f["path"]).name, f["source"], f["retrieved"], f["rows"] if f["rows"] is not None else "", (f["sha256"] or "")[:12]] for f in prov["files"]], font_pt=7.5)
     doc.heading("Appendix C. Verification of the analytical solution", 1)
@@ -234,7 +245,8 @@ def build_report(project, pdf: bool = True, strict_lint: bool = True) -> dict:
     doc.save(out_docx)
     out_pdf = convert_to_pdf(out_docx) if pdf else None
     return {"docx": str(out_docx), "pdf": str(out_pdf) if out_pdf else None, "placeholders": placeholders,
-            "lint": lint, "figures": len(fn), "tables": len(tn), "sections": list(sections.keys())}
+            "lint": lint, "allowed_numbers": allowed_numbers, "figures": len(fn), "tables": len(tn),
+            "sections": list(sections.keys())}
 
 
 def g_scenarios(project, gkey):

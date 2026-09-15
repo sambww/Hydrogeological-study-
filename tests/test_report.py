@@ -43,6 +43,40 @@ def test_docx_structure(built):
     assert "98.7" in text and "121.5" in text and "52.31" in text
 
 
+def test_spacing_states_the_rule_and_discloses_its_basis(built):
+    """Lone Star spacing is operator-attested: the report may state the rule, but must say what that rests on."""
+    _, result = built
+    text = "\n".join(par.text for par in Document(result["docx"]).paragraphs)
+    assert "complies with the spacing rule" in text
+    assert "[REVIEWER TO CONFIRM: the current District spacing multiplier" not in text
+    # The sealing professional must be able to find the basis without opening the repo.
+    assert "stated on the attestation of" in text
+    assert "not on a reading of the District Rules" in text
+
+
+def test_a_number_in_an_opinion_cannot_whitelist_itself():
+    """The reviewer's prose is in the lint's own context, so it must be excluded from the allowed set.
+
+    Without this the anti-fabrication lint exempts exactly the place a hand-typed figure is most likely to appear:
+    a paragraph written by a person and dropped into a document someone seals.
+    """
+    ctx = {"opinions": {"water_quality": "Total dissolved solids average 4321 mg/L."},
+           "results": {"total_ft": 98.7}}
+    lint = lint_sections({"water_quality": "Total dissolved solids average 4321 mg/L."}, ctx)
+    assert not lint["ok"]
+    assert lint["problems"] == [{"section": "water_quality", "number": "4321"}]
+
+
+def test_an_opinion_citing_a_computed_number_passes():
+    ctx = {"opinions": {"summary": "drawdown of 98.7 ft"}, "results": {"total_ft": 98.7}}
+    assert lint_sections({"summary": "drawdown of 98.7 ft"}, ctx)["ok"]
+
+
+def test_reviewer_identity_does_not_whitelist_numbers_either():
+    ctx = {"reviewer": {"license_no": "4321"}, "results": {"total_ft": 98.7}}
+    assert not lint_sections({"summary": "a drawdown of 4321 ft"}, ctx)["ok"]
+
+
 def test_checklist(built):
     p, _ = built
     cl = p.artifacts["checklist"]

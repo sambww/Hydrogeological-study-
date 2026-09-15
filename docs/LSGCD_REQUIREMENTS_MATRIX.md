@@ -19,7 +19,12 @@
 | II.B.5(b) | Interference among system wells | 6.x matrix table | `analysis/interference.py` | yes |
 | II.B.5(c) | Tabulated impacts at nearby wells (24 h and max) | 6 impact tables | `analysis/scenarios.py` | yes |
 | I.C | Stamped by Texas P.G./P.E. | seal block | `review.yaml` | reviewer |
-| III | Post-drilling submittal | (Phase 2 mode) | - | - |
+| III.1 | Geophysical logs (res/induction + SP/gamma, open hole, LAS) | Post report 2, log inventory table | `analysis/asbuilt.py`, `data/las.py` | yes (interpretation: reviewer) |
+| III.2 | PWS sampling per TCEQ | Post report 4 | `data/water_quality.py` | reviewer confirms completeness |
+| III.3 | Test water levels; specific capacity and transmissivity | Post report 3, Appendix C | `analysis/pumptest.py` | yes |
+| III.4 | Aquifer conditions and well/pump parameter table | Post report 1, Table 1 | `analysis/asbuilt.py` | yes |
+| III.5 | Field parameters | Post report 4 table | intake `as_built.field_params` | yes |
+| III.6 | Post-construction lab analyses | Post report 4 tables | `data/water_quality.py` | yes |
 
 Spacing multipliers configured (`districts/lsgcd.yaml`): Chicot/Evangeline 2.0 ft/gpm, Jasper 1.5, Catahoula 1.0 -
 verify against the current Rule 3.3 before each submittal.

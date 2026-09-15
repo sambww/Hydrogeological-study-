@@ -1,7 +1,7 @@
 # hydrostudy
 
 Generates a complete draft hydrogeological report for Texas groundwater-district permit applications (Lone Star GCD
-pre-drilling report format; feasibility-study variant) from a YAML intake and local public-data extracts. A licensed
+pre-drilling and post-drilling report formats; feasibility-study variant) from a YAML intake and local public-data extracts. A licensed
 Texas P.G. or P.E. reviews, completes the highlighted opinion placeholders and seals the document.
 
 What it produces (per project, in `build/`):
@@ -14,13 +14,16 @@ What it produces (per project, in `build/`):
 Quick start:
 ```
 python -m venv .venv && .venv/bin/pip install -e .[dev]
+.venv/bin/hydrostudy doctor --network               # environment and data-host checks
 .venv/bin/hydrostudy new projects/my_well          # scaffold from the example
+# or fill the web intake sheet (web/intake_form.html, published as an Artifact) and import its submission:
+.venv/bin/hydrostudy import-intake projects/my_well submission.json
 # edit projects/my_well/intake.yaml, review.yaml and data/*.csv (see docs/WORKFLOW.md and docs/DATA_SOURCES.md)
 .venv/bin/hydrostudy validate projects/my_well
 .venv/bin/hydrostudy run projects/my_well
 ```
 
-See `docs/WORKFLOW.md` (step by step), `docs/DATA_SOURCES.md` (where each input comes from and the expected columns),
+See `docs/RUNBOOK.md` (set up your machine, validate the connectors and GAM script, run a real project), `docs/WORKFLOW.md` (step by step), `docs/DATA_SOURCES.md` (where each input comes from and the expected columns),
 and `docs/LSGCD_REQUIREMENTS_MATRIX.md` (guideline item -> report section -> code).
 
 Verification: the analytical engine reproduces a District-accepted 2023 submittal to 0.1 ft (`tests/test_theis.py`).

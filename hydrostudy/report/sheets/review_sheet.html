@@ -1,0 +1,508 @@
+<title>Report Review Sheet</title>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@500;600;700&family=IBM+Plex+Mono:wght@400;500&family=Source+Sans+3:ital,wght@0,400;0,600;1,400&family=Source+Serif+4:ital,opsz,wght@0,8..60,400;1,8..60,400&display=swap">
+<style>
+:root{
+  --ground:#F4F7F9; --surface:#FFFFFF; --sunk:#E9F0F4;
+  --ink:#14212B; --muted:#5C7180; --line:#D3DEE6; --line-strong:#B4C5D1;
+  --accent:#0B6E77; --accent-soft:#DBECEE; --accent-ink:#FFFFFF;
+  --warn:#8F5205; --warn-soft:#FBF0E0; --bad:#A32217; --good:#1C6739;
+  --sans:"Source Sans 3",-apple-system,Segoe UI,Roboto,sans-serif;
+  --cond:"Barlow Condensed","Source Sans 3",Segoe UI,sans-serif;
+  --serif:"Source Serif 4",Georgia,"Times New Roman",serif;
+  --mono:"IBM Plex Mono",ui-monospace,SFMono-Regular,Menlo,monospace;
+  --r:4px;
+}
+@media(prefers-color-scheme:dark){:root:not([data-theme="light"]){
+  --ground:#0B1216; --surface:#141E25; --sunk:#1B272F;
+  --ink:#E3ECF1; --muted:#94A8B4; --line:#24333C; --line-strong:#364A56;
+  --accent:#47B4BD; --accent-soft:#113035; --accent-ink:#06181B;
+  --warn:#D9973F; --warn-soft:#2A2013; --bad:#E8776C; --good:#5DB77F;
+}}
+:root[data-theme="dark"]{
+  --ground:#0B1216; --surface:#141E25; --sunk:#1B272F;
+  --ink:#E3ECF1; --muted:#94A8B4; --line:#24333C; --line-strong:#364A56;
+  --accent:#47B4BD; --accent-soft:#113035; --accent-ink:#06181B;
+  --warn:#D9973F; --warn-soft:#2A2013; --bad:#E8776C; --good:#5DB77F;
+}
+*{box-sizing:border-box}
+body{background:var(--ground);color:var(--ink);font:400 15px/1.55 var(--sans);margin:0}
+h1,h2,h3{font-family:var(--cond);text-wrap:balance;margin:0;letter-spacing:.01em}
+.shell{display:grid;grid-template-columns:minmax(0,1fr)}
+@media(min-width:1020px){.shell{grid-template-columns:272px minmax(0,1fr);align-items:start}}
+
+.rail{padding:20px 16px;padding-block:20px;background:var(--surface);border-bottom:1px solid var(--line);min-width:0}
+@media(min-width:1020px){.rail{position:sticky;top:0;max-height:100vh;overflow-y:auto;border-bottom:0;border-right:1px solid var(--line)}}
+.brand{font-family:var(--cond);font-weight:700;font-size:19px;line-height:1.1}
+.brand span{display:block;font-family:var(--mono);font-size:10.5px;font-weight:400;letter-spacing:.1em;text-transform:uppercase;color:var(--muted);margin-top:5px}
+.nav{display:flex;flex-direction:column;gap:1px;margin:18px 0}
+.nav a{display:flex;justify-content:space-between;gap:8px;align-items:baseline;padding:6px 8px;border-radius:var(--r);color:var(--ink);text-decoration:none;font-size:14px}
+.nav a:hover{background:var(--sunk)}
+.nav a .n{font-family:var(--mono);font-size:11px;color:var(--muted)}
+.meter{border:1px solid var(--line);border-radius:var(--r);padding:11px 12px;background:var(--sunk);display:grid;gap:9px}
+.meter div{display:flex;justify-content:space-between;gap:10px;align-items:baseline}
+.meter dt{font-family:var(--mono);font-size:10.5px;letter-spacing:.07em;text-transform:uppercase;color:var(--muted)}
+.meter dd{margin:0;font-family:var(--mono);font-size:14px;font-variant-numeric:tabular-nums}
+.meter dd.flagged{color:var(--warn)}
+.acts{display:grid;gap:7px;margin-top:16px}
+button{font:600 14px/1 var(--sans);border-radius:var(--r);border:1px solid var(--line-strong);background:var(--surface);color:var(--ink);padding:9px 12px;cursor:pointer}
+button:hover{border-color:var(--accent)}
+button.primary{background:var(--accent);border-color:var(--accent);color:var(--accent-ink)}
+button.primary:hover{filter:brightness(1.08)}
+button.mini{font-size:12.5px;padding:5px 9px;font-weight:400}
+button:focus-visible,input:focus-visible,select:focus-visible,textarea:focus-visible,a:focus-visible{outline:2px solid var(--accent);outline-offset:1px}
+.note{font-size:12.5px;color:var(--muted);margin-top:12px}
+
+.doc{padding:0 16px 64px;padding-block:0 64px;min-width:0}
+.masthead{padding:26px 0 16px;border-bottom:2px solid var(--ink);margin-bottom:24px}
+.kicker{font-family:var(--mono);font-size:10.5px;letter-spacing:.12em;text-transform:uppercase;color:var(--accent);margin-bottom:7px}
+.masthead h1{font-size:clamp(24px,3.6vw,34px);font-weight:700}
+.draftid{display:grid;gap:2px 18px;margin-top:12px;font-size:13.5px;color:var(--muted)}
+@media(min-width:620px){.draftid{grid-template-columns:repeat(2,minmax(0,1fr))}}
+.draftid b{font-weight:600;color:var(--ink);font-variant-numeric:tabular-nums}
+section{margin:0 0 34px;scroll-margin-top:16px}
+.sechead{display:flex;flex-wrap:wrap;gap:2px 10px;align-items:baseline;border-bottom:1px solid var(--line);padding-bottom:6px;margin-bottom:14px}
+.sechead h2{font-size:21px;font-weight:600}
+.sechead .n{font-family:var(--mono);font-size:11px;color:var(--muted)}
+.sechead p{flex:1 1 100%;color:var(--muted);font-size:13.5px;margin:2px 0 0}
+.row{display:grid;gap:12px;grid-template-columns:repeat(auto-fit,minmax(168px,1fr));min-width:0}
+.item,.grid,.split>*{min-width:0}
+@media(max-width:560px){.row{grid-template-columns:minmax(0,1fr)}}
+.field{display:grid;gap:4px;min-width:0}
+.field.wide{grid-column:1/-1}
+label{font-family:var(--mono);font-size:10.5px;letter-spacing:.06em;text-transform:uppercase;color:var(--muted)}
+input,select,textarea{font:400 14.5px/1.4 var(--sans);color:var(--ink);background:var(--surface);border:1px solid var(--line-strong);border-radius:var(--r);padding:7px 8px;width:100%;min-width:0}
+input[data-num]{font-family:var(--mono);font-variant-numeric:tabular-nums}
+textarea{min-height:64px;resize:vertical}
+.hint{font-size:12px;color:var(--muted)}
+
+/* ---- opinions: written in the voice the report prints in ---- */
+.opinion{border:1px solid var(--line);border-left:3px solid var(--line-strong);border-radius:var(--r);background:var(--surface);padding:14px;margin-bottom:14px}
+.opinion.pending{border-left-color:var(--accent)}
+.opinion.answered{border-left-color:var(--good)}
+.ohead{display:flex;flex-wrap:wrap;gap:4px 10px;align-items:baseline;margin-bottom:4px}
+.ohead h3{font-size:16.5px;font-weight:600}
+.ohead .gl{font-family:var(--mono);font-size:10.5px;letter-spacing:.06em;color:var(--muted)}
+.ohead .state{font-family:var(--mono);font-size:10px;letter-spacing:.07em;text-transform:uppercase;margin-left:auto}
+.opinion.pending .state{color:var(--accent)}
+.opinion.answered .state{color:var(--good)}
+.prompt{font-size:13.5px;color:var(--muted);margin:0 0 9px;max-width:68ch}
+.replaces{font-size:12.5px;background:var(--sunk);border-radius:var(--r);padding:7px 9px;margin:0 0 9px;color:var(--muted)}
+.replaces b{font-family:var(--mono);font-size:10px;letter-spacing:.06em;text-transform:uppercase;display:block;margin-bottom:3px;color:var(--muted)}
+.opinion textarea{font:400 15.5px/1.6 var(--serif);min-height:112px;max-width:68ch}
+.numwarn{margin:8px 0 0;padding:8px 10px;border:1px solid var(--warn);border-left-width:3px;border-radius:var(--r);background:var(--warn-soft);font-size:13px}
+.numwarn code{font-family:var(--mono);font-size:12.5px}
+.numok{margin:6px 0 0;font-size:12.5px;color:var(--good)}
+
+.grid{overflow-x:auto}
+table{border-collapse:collapse;width:100%;min-width:420px}
+th{font-family:var(--mono);font-size:10px;letter-spacing:.06em;text-transform:uppercase;color:var(--muted);font-weight:400;text-align:left;padding:0 8px 5px 0;border-bottom:1px solid var(--line)}
+td{padding:5px 8px 5px 0;border-bottom:1px solid var(--line);font-size:13.5px;vertical-align:baseline}
+td.num,th.num{text-align:right;font-family:var(--mono);font-variant-numeric:tabular-nums}
+td input{padding:5px 6px;font-size:13.5px}
+.ctx{border:1px solid var(--line);border-radius:var(--r);background:var(--surface);padding:13px 14px;margin-bottom:14px}
+.ctx h3{font-size:15px;font-weight:600;margin-bottom:8px}
+ul.plain{list-style:none;margin:0;padding:0;display:grid;gap:7px}
+ul.plain li{font-size:13.5px;display:flex;gap:9px;align-items:baseline}
+ul.plain code{font-family:var(--mono);font-size:11px;color:var(--muted);white-space:nowrap}
+.lvl{font-family:var(--mono);font-size:9.5px;letter-spacing:.07em;text-transform:uppercase;padding:1px 5px;border-radius:2px;border:1px solid var(--line-strong);color:var(--muted);flex:none}
+.lvl.review{color:var(--warn);border-color:var(--warn)}
+pre.out{font-family:var(--mono);font-size:11.5px;background:var(--sunk);border:1px solid var(--line);border-radius:var(--r);padding:11px;overflow:auto;max-height:320px;margin:0}
+.toast{font-size:13px;padding:8px 10px;border-radius:var(--r);border:1px solid var(--line);background:var(--sunk);margin-top:10px}
+.toast.bad{border-color:var(--bad);color:var(--bad)}
+.toast.good{border-color:var(--good);color:var(--good)}
+@media(prefers-reduced-motion:reduce){*{animation:none!important;transition:none!important}}
+</style>
+
+<div class="shell">
+  <aside class="rail">
+    <div class="brand">Report Review Sheet<span>For the sealing professional</span></div>
+    <nav class="nav" id="nav"></nav>
+    <dl class="meter">
+      <div><dt>Opinions</dt><dd id="m-op">0 of 0</dd></div>
+      <div><dt>Number warnings</dt><dd id="m-num">0</dd></div>
+      <div><dt>Pipeline flags</dt><dd id="m-flag">0</dd></div>
+      <div><dt>Status</dt><dd id="m-status">draft</dd></div>
+    </dl>
+    <div class="acts">
+      <button class="primary" id="b-submit">Send to Claude</button>
+      <button id="b-save">Save file</button>
+      <button class="mini" id="b-copy">Copy JSON</button>
+      <button class="mini" id="b-clear">Clear my entries</button>
+    </div>
+    <div id="toast"></div>
+    <p class="note">Kept in this browser as you type. Nothing leaves the page until you send or save it.</p>
+  </aside>
+
+  <main class="doc">
+    <header class="masthead">
+      <div class="kicker" id="kicker">Draft under review</div>
+      <h1 id="title">Report review</h1>
+      <div class="draftid" id="draftid"></div>
+    </header>
+    <div id="form"></div>
+
+    <section id="sec-submit">
+      <div class="sechead"><span class="n">5</span><h2>Send back</h2>
+        <p>Your entries become review.yaml. Re-running the report inserts the opinions and applies any decisions.</p></div>
+      <pre class="out" id="preview"></pre>
+    </section>
+  </main>
+</div>
+
+<script type="application/json" id="field-spec">[
+ {"p":"reviewer.name","label":"Name","type":"text","sec":"identity"},
+ {"p":"reviewer.title","label":"Title","type":"text","sec":"identity"},
+ {"p":"reviewer.license_type","label":"Licence","type":"select","sec":"identity","opts":[["","not stated"],["P.G.","P.G."],["P.E.","P.E."]]},
+ {"p":"reviewer.license_no","label":"Licence no.","type":"text","sec":"identity"},
+ {"p":"reviewer.firm","label":"Firm","type":"text","sec":"identity"},
+ {"p":"reviewer.firm_registration_no","label":"Firm registration no.","type":"text","sec":"identity","hint":"TBPG or TBPE registration of the issuing firm"},
+ {"p":"reviewer.authorization_date","label":"Authorization date","type":"date","sec":"identity"},
+ {"p":"reviewer.status","label":"Report status","type":"select","sec":"identity","opts":[["draft","Draft"],["reviewed","Reviewed"],["final","Final and sealed"]],"hint":"Final removes the draft banner and the review log, and is never overwritten"},
+ {"p":"decisions.t_ft2d","label":"Transmissivity","type":"number","sec":"decisions","dynamic":"per_aquifer","unit":"ft2/day"},
+ {"p":"decisions.s","label":"Storativity","type":"number","sec":"decisions","dynamic":"per_aquifer","step":"any"},
+ {"p":"decisions.r_w_ft","label":"Evaluation radius","type":"number","sec":"decisions","dynamic":"per_well","unit":"ft"},
+ {"p":"decisions.cone_edge_thresholds_ft","label":"Cone edge thresholds","type":"text","sec":"decisions","list":"num","unit":"ft","hint":"comma separated; blank keeps the configured values"},
+ {"p":"decisions.other_aquifer_wells","label":"Wells in other aquifers","type":"select","sec":"decisions","opts":[["","keep as configured"],["compute_and_flag","Compute and footnote"],["na","Report as not applicable"]]},
+ {"p":"notes","label":"Review notes","type":"area","sec":"submit","list":"lines","wide":true,"hint":"one per line; they appear in the review log of the draft"}
+]</script>
+<script type="application/json" id="sheet-context">__CONTEXT__</script>
+<script>
+const CTX = JSON.parse(document.getElementById("sheet-context").textContent);
+const SPEC = JSON.parse(document.getElementById("field-spec").textContent);
+/* The build's own allowed-number set. An opinion citing anything outside it fails report/lint.py, so the warning
+   here is the same judgement the build will make, made early. */
+const ALLOWED = new Set(CTX.allowed_numbers || []);
+const NUM_RE = /(?<![A-Za-z.\-\/])\d[\d,]*(?:\.\d+)?/g;
+
+const KEY = "hydrostudy.review.draft." + (CTX.project.dir || "x") + ".v" + (CTX.project.revision || 1);
+function blank(){
+  return {reviewer: Object.assign({}, CTX.reviewer||{}), decisions: Object.assign({}, CTX.decisions||{}),
+          opinions: Object.fromEntries((CTX.opinions||[]).map(o=>[o.key, o.current||""])), notes:(CTX.notes||[]).slice()};
+}
+let state;
+try{ const raw=localStorage.getItem(KEY); state = raw ? JSON.parse(raw) : blank(); }catch(e){ state = blank(); }
+if(!state || typeof state!=="object" || !state.opinions) state = blank();
+function save(){ try{ localStorage.setItem(KEY, JSON.stringify(state)); }catch(e){} }
+
+function getIn(o,p){ return p.split(".").reduce((x,k)=>(x==null?undefined:x[k]), o); }
+function setIn(o,p,v){ const ks=p.split("."); let x=o;
+  for(let i=0;i<ks.length-1;i++){ const k=ks[i]; if(x[k]==null) x[k]={}; x=x[k]; }
+  x[ks[ks.length-1]]=v; }
+function ce(tag,attrs,kids){ const n=document.createElement(tag);
+  for(const k in (attrs||{})){ const v=attrs[k]; if(v==null||v===false) continue;
+    if(k==="class") n.className=v; else if(k==="text") n.textContent=v; else n.setAttribute(k,v===true?"":v); }
+  (kids||[]).forEach(c=>c&&n.appendChild(c)); return n; }
+
+function badNumbers(text){
+  const out=[];
+  (String(text||"").match(NUM_RE)||[]).forEach(tok=>{
+    const t=tok.replace(/,+$/,"");
+    if(!ALLOWED.has(t) && !ALLOWED.has(t.replace(/,/g,""))) out.push(t);
+  });
+  return [...new Set(out)];
+}
+
+let uid=0;
+function control(schemaPath, statePath, spec, label){
+  const id="r"+(++uid), type=spec.type||"text", cur=getIn(state,statePath);
+  const wrap=ce("div",{class:"field"+(spec.wide?" wide":"")});
+  wrap.appendChild(ce("label",{for:id,text:(label||spec.label)+(spec.unit?" ("+spec.unit+")":"")}));
+  let inp;
+  if(type==="select"){
+    inp=ce("select",{id:id});
+    (spec.opts||[]).forEach(op=>{ const v=Array.isArray(op)?op[0]:op, t=Array.isArray(op)?op[1]:op;
+      inp.appendChild(ce("option",{value:v,text:t,selected:String(cur==null?"":cur)===String(v)})); });
+  } else if(type==="area"){
+    inp=ce("textarea",{id:id});
+    inp.value = spec.list==="lines" ? (Array.isArray(cur)?cur.join("\n"):(cur||"")) : (cur==null?"":cur);
+  } else {
+    inp=ce("input",{id:id,type:type==="number"?"number":(type==="date"?"date":"text"),step:spec.step||(type==="number"?"any":null)});
+    inp.value = spec.list==="num" ? (Array.isArray(cur)?cur.join(", "):"") : (cur==null?"":cur);
+    if(type==="number") inp.setAttribute("data-num","");
+  }
+  inp.setAttribute("data-field", schemaPath);
+  inp.setAttribute("data-path", statePath);
+  if(spec.list) inp.setAttribute("data-list", spec.list);
+  inp.addEventListener("input", onEdit); inp.addEventListener("change", onEdit);
+  wrap.appendChild(inp);
+  if(spec.hint) wrap.appendChild(ce("p",{class:"hint",text:spec.hint}));
+  return wrap;
+}
+
+function onEdit(e){
+  const el=e.target, p=el.getAttribute("data-path"), list=el.getAttribute("data-list");
+  let v;
+  if(list==="lines") v = el.value.split(/\r?\n/).map(s=>s.trim()).filter(Boolean);
+  else if(list==="num") v = el.value.split(",").map(s=>s.trim()).filter(Boolean).map(Number).filter(n=>!Number.isNaN(n));
+  else if(el.hasAttribute("data-num")) v = el.value===""?"":Number(el.value);
+  else v = el.value;
+  setIn(state,p,v); save(); refresh();
+}
+
+function sectionShell(id,n,title,blurb){
+  const el=ce("section",{id:"sec-"+id});
+  el.appendChild(ce("div",{class:"sechead"},[ce("span",{class:"n",text:n}),ce("h2",{text:title}),
+    blurb?ce("p",{text:blurb}):null]));
+  return el;
+}
+
+function renderIdentity(){
+  const el=sectionShell("identity","1","Who is signing",
+    "Goes on the letterhead and the signature block. Status controls the draft banner.");
+  el.appendChild(ce("div",{class:"row"}, SPEC.filter(s=>s.sec==="identity").map(s=>control(s.p,s.p,s))));
+  return el;
+}
+
+function renderOpinions(){
+  const el=sectionShell("opinions","2","Your opinions",
+    "Each one replaces a highlighted placeholder in the draft. Numbers are checked against what the report computed.");
+  el.appendChild(ce("div",{id:"override-note"}));
+  (CTX.opinions||[]).forEach(o=>{
+    const cur=state.opinions[o.key]||"";
+    const answered=!!cur.trim();
+    const box=ce("div",{class:"opinion "+(answered?"answered":"pending")});
+    box.appendChild(ce("div",{class:"ohead"},[
+      ce("h3",{text:o.label}),
+      ce("span",{class:"gl",text:"Guidelines "+o.guideline}),
+      ce("span",{class:"state",text:answered?"answered":"placeholder"})]));
+    box.appendChild(ce("p",{class:"prompt",text:o.prompt}));
+    (o.draft_text||[]).forEach(t=>box.appendChild(ce("p",{class:"replaces"},[
+      ce("b",{text:"Replaces in the draft"}),document.createTextNode(t)])));
+    const f=control("opinions."+o.key, "opinions."+o.key, {type:"area",label:o.label,wide:true});
+    f.querySelector("label").remove();
+    box.appendChild(f);
+    const warn=ce("div",{"data-warn":o.key});
+    box.appendChild(warn);
+    el.appendChild(box);
+  });
+  return el;
+}
+
+function renderDecisions(){
+  const el=sectionShell("decisions","3","Parameter decisions",
+    "Leave blank to keep what the analysis used. An override is applied and recorded in the report.");
+  const perAq=SPEC.filter(s=>s.dynamic==="per_aquifer"), perW=SPEC.filter(s=>s.dynamic==="per_well");
+
+  if((CTX.aquifers||[]).length){
+    const box=ce("div",{class:"ctx"},[ce("h3",{text:"Aquifer parameters as used"})]);
+    const g=ce("div",{class:"grid"}), t=ce("table");
+    t.appendChild(ce("thead",{},[ce("tr",{},[ce("th",{text:"Aquifer"}),ce("th",{class:"num",text:"T (ft2/day)"}),
+      ce("th",{class:"num",text:"S"}),ce("th",{class:"num",text:"K (ft/day)"}),ce("th",{text:"Source"})]
+      .concat(perAq.map(s=>ce("th",{text:"Override "+s.label}))))]));
+    const tb=ce("tbody");
+    (CTX.aquifers||[]).forEach(a=>{
+      const cells=[ce("td",{text:a.name}),ce("td",{class:"num",text:fmt(a.t_ft2d)}),
+        ce("td",{class:"num",text:fmt(a.s)}),ce("td",{class:"num",text:fmt(a.k_ftd)}),
+        ce("td",{text:[a.source_kind,a.model_version].filter(Boolean).join(" - ")||"not stated"})];
+      perAq.forEach(s=>{
+        const f=control(s.p, s.p+"."+a.name, s, s.label);
+        f.querySelector("label").remove();
+        cells.push(ce("td",{},[f]));
+      });
+      tb.appendChild(ce("tr",{},cells));
+    });
+    t.appendChild(tb); g.appendChild(t); box.appendChild(g);
+    (CTX.aquifers||[]).forEach(a=>{
+      if(a.citation) box.appendChild(ce("p",{class:"hint",text:a.name+": "+a.citation}));
+      if(a.gam_note) box.appendChild(ce("p",{class:"hint",text:a.name+": "+a.gam_note}));
+    });
+    el.appendChild(box);
+  }
+
+  if((CTX.wells||[]).length){
+    const box=ce("div",{class:"ctx"},[ce("h3",{text:"Wells and evaluation radius"})]);
+    const g=ce("div",{class:"grid"}), t=ce("table");
+    t.appendChild(ce("thead",{},[ce("tr",{},[ce("th",{text:"Well"}),ce("th",{text:"Aquifer"}),
+      ce("th",{class:"num",text:"Rate (gpm)"}),ce("th",{class:"num",text:"r_w used (ft)"})]
+      .concat(perW.map(s=>ce("th",{text:"Override "+s.label}))))]));
+    const tb=ce("tbody");
+    (CTX.wells||[]).forEach(w=>{
+      const cells=[ce("td",{text:w.label}),ce("td",{text:w.aquifer}),
+        ce("td",{class:"num",text:fmt(w.q_gpm)}),ce("td",{class:"num",text:fmt(w.r_w_ft)})];
+      perW.forEach(s=>{
+        const f=control(s.p, s.p+"."+w.id, s, s.label);
+        f.querySelector("label").remove();
+        cells.push(ce("td",{},[f]));
+      });
+      tb.appendChild(ce("tr",{},cells));
+    });
+    t.appendChild(tb); g.appendChild(t); box.appendChild(g);
+    el.appendChild(box);
+  }
+
+  el.appendChild(ce("div",{class:"row"}, SPEC.filter(s=>s.sec==="decisions"&&!s.dynamic).map(s=>control(s.p,s.p,s))));
+  return el;
+}
+
+function renderContext(){
+  const el=sectionShell("context","4","What the analysis produced",
+    "Read-only. Any number you cite in an opinion must appear in the report, and these are its results.");
+  if((CTX.flags||[]).length){
+    const box=ce("div",{class:"ctx"},[ce("h3",{text:"Raised by the pipeline"})]);
+    const ul=ce("ul",{class:"plain"});
+    (CTX.flags||[]).forEach(f=>ul.appendChild(ce("li",{},[
+      ce("span",{class:"lvl "+(f.level==="review"?"review":""),text:f.level}),
+      ce("span",{},[ce("code",{text:f.code+" "}),document.createTextNode(f.text)])])));
+    box.appendChild(ul); el.appendChild(box);
+  }
+  if((CTX.checklist||[]).length){
+    const box=ce("div",{class:"ctx"},[ce("h3",{text:"Guideline items not yet satisfied"})]);
+    const ul=ce("ul",{class:"plain"});
+    (CTX.checklist||[]).forEach(i=>ul.appendChild(ce("li",{},[ce("code",{text:i.id}),
+      document.createTextNode(i.text+" - "+i.status_label)])));
+    box.appendChild(ul); el.appendChild(box);
+  }
+  if((CTX.scenarios||[]).length){
+    const box=ce("div",{class:"ctx"},[ce("h3",{text:"Simulated drawdown at the pumped wells"})]);
+    const g=ce("div",{class:"grid"}), t=ce("table");
+    t.appendChild(ce("thead",{},[ce("tr",{},[ce("th",{text:"Scenario"}),ce("th",{text:"Well"}),
+      ce("th",{text:"Aquifer"}),ce("th",{class:"num",text:"Drawdown (ft)"})])]));
+    const tb=ce("tbody");
+    (CTX.scenarios||[]).forEach(s=>tb.appendChild(ce("tr",{},[ce("td",{text:s.scenario}),
+      ce("td",{text:s.well}),ce("td",{text:s.aquifer}),ce("td",{class:"num",text:fmt(s.drawdown_ft)})])));
+    t.appendChild(tb); g.appendChild(t); box.appendChild(g);
+    el.appendChild(box);
+  }
+  return el;
+}
+
+function fmt(v){
+  if(v==null||v==="") return "n/a";
+  const n=Number(v);
+  if(!Number.isFinite(n)) return String(v);
+  if(n!==0 && Math.abs(n)<0.01) return n.toExponential(2);
+  return n.toLocaleString(undefined,{maximumFractionDigits:2});
+}
+
+function prune(v){
+  const empty=x=>x===null||x===""||(Array.isArray(x)&&!x.length)||
+    (x&&typeof x==="object"&&!Array.isArray(x)&&!Object.keys(x).length);
+  if(Array.isArray(v)) return v.map(prune).filter(x=>!empty(x));
+  if(v&&typeof v==="object"){ const o={};
+    Object.keys(v).forEach(k=>{ const x=prune(v[k]); if(!empty(x)) o[k]=x; }); return o; }
+  if(typeof v==="string"){ const s=v.trim(); return s===""?null:s; }
+  return v===undefined?null:v;
+}
+function payload(){
+  const p=prune(JSON.parse(JSON.stringify(state)));
+  let warnings=0;
+  (CTX.opinions||[]).forEach(o=>{ warnings += badNumbers(state.opinions[o.key]||"").length; });
+  p._form={slug:"review-"+((CTX.project.dir||"project").split("/").pop())+"-r"+(CTX.project.revision||1),
+    submitted_at:new Date().toISOString(), form:"review sheet v1",
+    reviewer:(state.reviewer&&state.reviewer.name)||null,
+    draft:CTX.project.docx||null, reviewed_revision:CTX.project.revision||null,
+    number_warnings:warnings, override_set:hasOverride()};
+  return p;
+}
+
+function renderAll(){
+  document.getElementById("title").textContent = CTX.project.title || "Report review";
+  document.getElementById("kicker").textContent =
+    (CTX.project.mode==="feasibility" ? "Feasibility study" : "Hydrogeological report") + " under review";
+  const d=document.getElementById("draftid"); d.innerHTML="";
+  [["Applicant",CTX.project.applicant],["County",CTX.project.county],
+   ["Revision",CTX.project.revision],["Draft file",CTX.project.docx],
+   ["Built",CTX.project.generated_at],["Project",CTX.project.dir]].forEach(([k,v])=>{
+    if(v==null||v==="") return;
+    d.appendChild(ce("div",{},[document.createTextNode(k+": "),ce("b",{text:String(v)})]));
+  });
+  const host=document.getElementById("form"); host.innerHTML="";
+  [renderIdentity(),renderOpinions(),renderDecisions(),renderContext()].forEach(s=>host.appendChild(s));
+  const nav=document.getElementById("nav"); nav.innerHTML="";
+  [["identity","Who is signing","1"],["opinions","Your opinions","2"],["decisions","Parameter decisions","3"],
+   ["context","What the analysis produced","4"],["submit","Send back","5"]].forEach(([id,t,n])=>
+    nav.appendChild(ce("a",{href:"#sec-"+id},[ce("span",{text:t}),ce("span",{class:"n",text:n})])));
+  refresh();
+}
+
+function hasOverride(){
+  const d=state.decisions||{};
+  return Object.keys(d).some(k=>{
+    const v=d[k];
+    if(v==null||v==="") return false;
+    if(Array.isArray(v)) return v.length>0;
+    if(typeof v==="object") return Object.keys(v).some(kk=>v[kk]!==""&&v[kk]!=null);
+    return true;
+  });
+}
+
+function refresh(){
+  const ops=CTX.opinions||[];
+  let answered=0, warnings=0;
+
+  // An override changes the analysis, so every drawdown on this sheet is from the previous build. The number check
+  // below is judging against that same stale set, and cannot know better until the report is rebuilt.
+  const note=document.getElementById("override-note");
+  if(note){
+    note.innerHTML="";
+    if(hasOverride()) note.appendChild(ce("div",{class:"numwarn",text:
+      "You have set a parameter override, so the drawdown figures on this sheet come from the build made before it. "
+      + "Any figure you quote must be re-checked once the report is rebuilt with your decision applied."}));
+  }
+  ops.forEach(o=>{
+    const text=state.opinions[o.key]||"";
+    if(text.trim()) answered++;
+    const bad=badNumbers(text);
+    const host=document.querySelector('[data-warn="'+o.key+'"]');
+    if(!host) return;
+    host.innerHTML="";
+    if(bad.length){
+      warnings+=bad.length;
+      const w=ce("div",{class:"numwarn"});
+      w.appendChild(document.createTextNode("The report does not compute "));
+      bad.forEach((b,i)=>{ if(i) w.appendChild(document.createTextNode(i===bad.length-1?" or ":", "));
+        w.appendChild(ce("code",{text:b})); });
+      w.appendChild(document.createTextNode(". The build rejects an opinion that cites a number it cannot trace, so "
+        + "take the figure from the tables above, write it in words, or drop it."));
+      host.appendChild(w);
+    } else if(text.trim()){
+      host.appendChild(ce("p",{class:"numok",text:"Every figure here traces to the report."}));
+    }
+    const box=host.closest(".opinion");
+    if(box){ box.classList.toggle("answered", !!text.trim()); box.classList.toggle("pending", !text.trim()); }
+    const st=box && box.querySelector(".state");
+    if(st) st.textContent = text.trim() ? "answered" : "placeholder";
+  });
+  document.getElementById("m-op").textContent = answered+" of "+ops.length;
+  const numEl=document.getElementById("m-num");
+  numEl.textContent = warnings; numEl.classList.toggle("flagged", warnings>0);
+  const flagEl=document.getElementById("m-flag");
+  flagEl.textContent = (CTX.flags||[]).length; flagEl.classList.toggle("flagged",(CTX.flags||[]).length>0);
+  const status=(state.reviewer&&state.reviewer.status)||"draft";
+  document.getElementById("m-status").textContent =
+    status==="final" && answered<ops.length ? status+" (placeholders left)" : status;
+  document.getElementById("preview").textContent = JSON.stringify(payload(),null,2);
+}
+
+function toast(msg,kind){
+  const t=document.getElementById("toast"); t.innerHTML="";
+  t.appendChild(ce("div",{class:"toast"+(kind?" "+kind:""),text:msg}));
+}
+async function cap(name){
+  try{ return (window.claude&&window.claude.use) ? await window.claude.use(name) : null; }catch(e){ return null; }
+}
+
+document.getElementById("b-clear").onclick=()=>{ state=blank(); save(); renderAll(); toast("Your entries cleared."); };
+document.getElementById("b-copy").onclick=async()=>{
+  try{ await navigator.clipboard.writeText(JSON.stringify(payload(),null,2)); toast("Payload copied.","good"); }
+  catch(e){ toast("Could not copy. Select the payload at the foot of the sheet instead.","bad"); }
+};
+document.getElementById("b-save").onclick=async()=>{
+  const d=await cap("downloads");
+  if(!d){ toast("Saving files is not available in this view. Use Copy JSON instead.","bad"); return; }
+  const p=payload();
+  try{ await d.save({filename:p._form.slug+".review.json", data:JSON.stringify(p,null,2)}); toast("Saved.","good"); }
+  catch(e){ toast("Save declined or unavailable. Use Copy JSON instead.","bad"); }
+};
+document.getElementById("b-submit").onclick=async()=>{
+  const db=await cap("db");
+  if(!db){ toast("Sending is not available in this view. Use Save file or Copy JSON.","bad"); return; }
+  const p=payload();
+  const warnings=p._form.number_warnings;
+  try{ await db.doc("reviews/"+p._form.slug).set(p);
+    toast(warnings ? "Sent, with "+warnings+" number warning(s) noted." : "Sent. Ask Claude to import it.","good"); }
+  catch(e){ toast("Could not send: "+((e&&e.message)||"unknown error"),"bad"); }
+};
+
+renderAll();
+</script>

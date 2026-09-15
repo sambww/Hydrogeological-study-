@@ -1,4 +1,4 @@
-"""hydrostudy command line: new | validate | run | render | checklist"""
+"""hydrostudy command line: new | import-intake | validate | run | render | checklist | doctor"""
 
 from __future__ import annotations
 
@@ -25,6 +25,66 @@ def cmd_new(args):
     (dst / "data" / "district_wells.csv").write_text("registration_no,permit_no,owner,address,city,total_depth_ft,screen_intervals,aquifer,status,lat,lon\n", encoding="utf-8")
     (dst / "data" / "water_quality_samples.csv").write_text("well_id,well_name,source,sample_date,lat,lon,depth_ft,aquifer,constituent,value,units,qualifier\n", encoding="utf-8")
     print(f"Scaffolded {dst}. Edit intake.yaml, review.yaml and the files under data/, then run: hydrostudy run {dst}")
+    return 0
+
+
+def cmd_import_intake(args):
+    from pydantic import ValidationError
+
+    from hydrostudy.intake_import import load_payload, write_intake
+    try:
+        payload = load_payload(args.payload)
+    except (OSError, ValueError) as e:
+        print(f"cannot read submission: {e}", file=sys.stderr)
+        return 2
+    try:
+        target = write_intake(args.project_dir, payload, force=args.force)
+    except FileExistsError as e:
+        print(f"{e}. Re-run with --force to overwrite.", file=sys.stderr)
+        return 2
+    except ValidationError as e:
+        print("submission is not a valid intake:")
+        for err in e.errors():
+            loc = ".".join(str(x) for x in err["loc"])
+            print(f"  - {loc}: {err['msg']}")
+        return 1
+    print(f"Wrote {target}. Next: fill data/manifest.yaml sources, then run: hydrostudy run {args.project_dir}")
+    return 0
+
+
+def cmd_import_review(args):
+    from pydantic import ValidationError
+
+    from hydrostudy.review_import import load_payload, write_review
+    try:
+        payload = load_payload(args.payload)
+    except (OSError, ValueError) as e:
+        print(f"cannot read submission: {e}", file=sys.stderr)
+        return 2
+    try:
+        target = write_review(args.project_dir, payload, force=args.force)
+    except FileExistsError as e:
+        print(f"{e}. Re-run with --force to overwrite.", file=sys.stderr)
+        return 2
+    except ValidationError as e:
+        print("submission is not a valid review:")
+        for err in e.errors():
+            loc = ".".join(str(x) for x in err["loc"])
+            print(f"  - {loc}: {err['msg']}")
+        return 1
+    print(f"Wrote {target}. Next: hydrostudy run {args.project_dir}")
+    return 0
+
+
+def cmd_review_sheet(args):
+    from hydrostudy.review_sheet import SheetNotReady, render_sheet
+    try:
+        target = render_sheet(args.project_dir, args.out)
+    except SheetNotReady as e:
+        print(str(e), file=sys.stderr)
+        return 2
+    print(f"Wrote {target}. Publish it for the reviewer, then import their submission with: "
+          f"hydrostudy import-review {args.project_dir} <submission>.json")
     return 0
 
 
@@ -89,14 +149,12 @@ def cmd_run(args):
     p.run_figures()
     cl = p.run_checklist()
     p.artifacts["checklist"] = cl
-    from hydrostudy.report.assemble import LintError, build_report
+    from hydrostudy.report.assemble import LintError
     try:
-        result = build_report(p, pdf=not args.no_pdf, strict_lint=not args.no_strict_lint)
+        result = p.run_report(pdf=not args.no_pdf, strict_lint=not args.no_strict_lint)
     except LintError as e:
         print(f"LINT FAILURE: {e}", file=sys.stderr)
         return 3
-    from hydrostudy.pipeline import dump_json
-    dump_json(result, p.build_dir / "report.json")
     _print_summary(p, result, cl, args.no_pdf)
     return 0
 
@@ -121,6 +179,20 @@ def main(argv=None):
     s = sub.add_parser("new", help="scaffold a new project folder")
     s.add_argument("project_dir")
     s.set_defaults(fn=cmd_new)
+    s = sub.add_parser("import-intake", help="write intake.yaml from a web intake form submission (JSON)")
+    s.add_argument("project_dir")
+    s.add_argument("payload", help="path to the submission JSON saved from the form or read out of the artifact database")
+    s.add_argument("--force", action="store_true", help="overwrite an existing intake.yaml")
+    s.set_defaults(fn=cmd_import_intake)
+    s = sub.add_parser("import-review", help="write review.yaml from a review sheet submission (JSON)")
+    s.add_argument("project_dir")
+    s.add_argument("payload", help="path to the submission JSON saved from the sheet or read out of the artifact database")
+    s.add_argument("--force", action="store_true", help="overwrite an existing review.yaml")
+    s.set_defaults(fn=cmd_import_review)
+    s = sub.add_parser("review-sheet", help="build the reviewer's sheet for a project that has been run")
+    s.add_argument("project_dir")
+    s.add_argument("--out", default=None, help="write somewhere other than build/review_sheet.html")
+    s.set_defaults(fn=cmd_review_sheet)
     s = sub.add_parser("validate", help="validate intake.yaml and review.yaml")
     s.add_argument("project_dir")
     s.set_defaults(fn=cmd_validate)
@@ -130,6 +202,9 @@ def main(argv=None):
         s.add_argument("--no-pdf", action="store_true")
         s.add_argument("--no-strict-lint", action="store_true", help="write the report even if the narrative lint finds unknown numbers")
         s.set_defaults(fn=fn)
+    s = sub.add_parser("doctor", help="check the environment (packages, LibreOffice, optional extras, data hosts)")
+    s.add_argument("--network", action="store_true", help="also test reachability of the public data hosts")
+    s.set_defaults(fn=lambda a: __import__("hydrostudy.doctor", fromlist=["main"]).main(a.network))
     s = sub.add_parser("checklist", help="print the guideline checklist")
     s.add_argument("project_dir")
     s.set_defaults(fn=cmd_checklist)

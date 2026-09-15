@@ -2,10 +2,13 @@
 
 from __future__ import annotations
 
+from hydrostudy.districts.status import rule_status
 
-def spacing_analysis(intake, district, nearby: list[dict]) -> dict:
+
+def spacing_analysis(intake, district, nearby: list[dict], status: dict | None = None) -> dict:
+    status = status or rule_status(district)
     out = {"rule_reference": district.get("spacing", {}).get("rule_reference"), "wells": [], "any_violation": False,
-           "exception_requested": intake.permit.spacing_exception_requested}
+           "exception_requested": intake.permit.spacing_exception_requested, "rule_status": status}
     for w in intake.proposed_wells:
         mult = district.spacing_ft_per_gpm(w.aquifer)
         req = district.required_spacing_ft(w.aquifer, w.max_rate_gpm)
@@ -22,6 +25,9 @@ def spacing_analysis(intake, district, nearby: list[dict]) -> dict:
                                     "distance_ft": n["distance_by_well"][w.id]} for n in same_system],
             "complies": (req is not None) and not conflicts,
             "rule_available": req is not None,
+            # "provisional" means the distance was computed from a multiplier that was not read from the District's
+            # own rules document (or whose reading is stale), so the conclusion is not yet a statement of compliance.
+            "provisional": (req is not None) and not status["spacing_authoritative"],
         }
         out["wells"].append(rec)
         if conflicts:

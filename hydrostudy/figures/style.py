@@ -116,8 +116,10 @@ def plot_proposed(ax, project, labels=None):
 
 def draw_hydrography(ax, project):
     for _name, geom in project.artifacts.get("_hydro_geoms", []):
-        col = COLORS["pond"] if geom.geom_type in ("Polygon", "MultiPolygon") else COLORS["stream"]
-        draw_shapely(ax, geom, color=col, facecolor=col, lw=1.0, zorder=3, alpha=0.9)
+        if geom.geom_type in ("Polygon", "MultiPolygon"):
+            draw_shapely(ax, geom, facecolor=COLORS["pond"], edgecolor=COLORS["stream"], lw=0.8, zorder=3, alpha=0.9)
+        else:
+            draw_shapely(ax, geom, color=COLORS["stream"], lw=1.2, zorder=3, alpha=0.9)
 
 
 def draw_boundary(ax, project, lw=1.5):

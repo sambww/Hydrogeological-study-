@@ -13,10 +13,25 @@ rules:
   version: "Rules as amended; Hydrogeological Report Guidelines adopted 11-11-2022 (Rules 2.6(b)(15), 2.12, 3.4)"
   verified_on: "2026-09-12"
   verified_by: "hydrostudy setup (from the 11-11-2022 guideline PDF and 2023 consultant reports); re-verify against current LSGCD Rules before each submittal"
+  # source: primary  = read from a District-published document; derived = reconstructed from other sources.
+  # The report-content requirements and the reporting threshold below come from the District's own published
+  # Hydrogeological Report Guidelines (11-11-2022). The spacing multipliers do not; see spacing.source.
+  source: primary
+  source_note: "Report contents and the reporting threshold are taken from the District's published Hydrogeological Report Guidelines (11-11-2022)."
+  recheck_after_days: 180
 report_threshold_gpm: 700          # system aggregate capacity from the same District aquifer
 threshold_note: "A hydrogeological report is required for a new well or well system with aggregate capacity of 700 gpm or greater, for increases of existing wells to 700 gpm or greater, and for spacing exceptions (Guidelines I.B)."
 spacing:
   rule_reference: "LSGCD Rule 3.3 (verify current multipliers)"
+  # These multipliers were read back from consultant reports the District accepted in 2023. They have NOT been read
+  # out of the District Rules document, which this project has never been able to retrieve. They are carried as
+  # operator_attested rather than derived because the operator named below, who drills and permits in this district,
+  # confirms they are current. Reading Rule 3.3 supersedes this: set source to primary and update verified_on.
+  # If the attestation ages past rules.recheck_after_days the qualifier returns on its own.
+  source: operator_attested
+  attested_by: "Samuel Ballard, Owner, Ballard Water Well Company"
+  attested_on: "2026-09-14"
+  source_note: "Multipliers were reconstructed from hydrogeological reports the District accepted in 2023 and confirmed as current by the operator named in attested_by. They were not read from the District Rules; supersede with source: primary once LSGCD Rule 3.3 is read."
   well_to_well:
     - aquifers: [Chicot, Evangeline]
       ft_per_gpm: 2.0
@@ -121,4 +136,42 @@ checklist:
   - id: II.B.5(c)
     text: Tabulated 24-hour and maximum-production impacts on registered/permitted wells within the search radius.
     evidence: [table_impacts_well, table_impacts_system]
+    auto: true
+checklist_post:
+  - id: III.1(a)
+    text: Geophysical logs with a resistivity or induction curve and a spontaneous potential or gamma ray curve at a minimum.
+    evidence: [logs_min_curves]
+    auto: true
+  - id: III.1(b)
+    text: Logs performed in the initial open borehole (resistivity with SP and gamma ray at a minimum).
+    evidence: [logs_open_hole]
+    auto: true
+  - id: III.1(c)
+    text: Wells cased with PVC require induction and gamma ray logs.
+    evidence: [logs_pvc]
+    auto: true
+  - id: III.1(d)
+    text: Digital log files submitted in LAS format as well as printed.
+    evidence: [logs_las]
+    auto: true
+  - id: III.2
+    text: All public water supply sampling completed in accordance with TCEQ/EPA requirements submitted to the District.
+    evidence: [lab_results]
+    auto: false
+    professional: Confirm the TCEQ-required sampling suite is complete and attached.
+  - id: III.3
+    text: Digital or tabulated water levels measured during the drawdown, specific-capacity or aquifer test, with an estimate of specific capacity and transmissivity.
+    evidence: [test_data, sc_and_t]
+    auto: true
+  - id: III.4
+    text: Table of aquifer conditions and well and pump parameters (static water level and date, screen and blank liner diameters and depths, top of first screen, total depth, pump diameter and setting).
+    evidence: [table_asbuilt]
+    auto: true
+  - id: III.5
+    text: Field parameters (specific conductivity, temperature, pH) measured during the test or sampling.
+    evidence: [field_params]
+    auto: true
+  - id: III.6
+    text: Laboratory analyses of samples collected after construction and development.
+    evidence: [lab_results]
     auto: true

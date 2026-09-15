@@ -53,6 +53,10 @@ def render(project, well, path):
         ax.add_patch(Rectangle((-w, c.top_ft), 2 * w, c.bottom_ft - c.top_ft, fc="white", ec="k", lw=1.6, zorder=3))
         wall = f" x {c.wall_in}\"" if c.wall_in else ""
         right_labels.append((c.top_ft + 0.3 * (c.bottom_ft - c.top_ft), f"{_frac(c.diameter_in)}\"{wall} {c.material} casing ({c.top_ft:+,.0f}' - {c.bottom_ft:,.0f}')"))
+    for bl in getattr(well, "blank_liner", []) or []:
+        w = hw(bl.diameter_in)
+        ax.add_patch(Rectangle((-w, bl.top_ft), 2 * w, bl.bottom_ft - bl.top_ft, fc="#dddddd", ec="k", lw=1.2, zorder=4))
+        right_labels.append(((bl.top_ft + bl.bottom_ft) / 2, f"{_frac(bl.diameter_in)}\" {bl.material} blank liner ({bl.top_ft:,.0f}' - {bl.bottom_ft:,.0f}')"))
     for s in well.screen:
         w = hw(s.diameter_in)
         ax.add_patch(Rectangle((-w, s.top_ft), 2 * w, s.bottom_ft - s.top_ft, fc="white", ec="k", lw=1.2, hatch="---", zorder=4))
@@ -74,9 +78,11 @@ def render(project, well, path):
         ax.annotate("", (0.32, well.static_water_level_ft), (0.32, well.static_water_level_ft - 0.02 * td),
                     arrowprops=dict(arrowstyle="-|>", color="#1f77b4"))
         ax.text(-0.98, well.static_water_level_ft, f"Est. W.L. ~{well.static_water_level_ft:,.0f}'", va="center", fontsize=7, color="#1f77b4")
-    if well.pump_setting_ft is not None:
-        ax.plot([0], [well.pump_setting_ft], marker="v", color="k")
-        ax.text(-0.98, well.pump_setting_ft, f"Pump setting {well.pump_setting_ft:,.0f}'", va="center", fontsize=7)
+    if getattr(well, "pump_setting_ft", None) is not None:
+        pw = getattr(well, "pump_diameter_in", None)
+        wpump = hw(pw) * 0.9 if pw else 0.12
+        ax.add_patch(Rectangle((-wpump, well.pump_setting_ft - 0.03 * td), 2 * wpump, 0.03 * td, fc="#444", ec="k", zorder=6))
+        ax.text(-0.98, well.pump_setting_ft, f"Pump setting {well.pump_setting_ft:,.0f}'" + (f" ({_frac(pw)}\")" if pw else ""), va="center", fontsize=7)
     ax.text(0, td * 1.02, f"T.D. {td:,.0f}'", ha="center", va="top", fontsize=8, fontweight="bold")
     # de-overlap right-hand annotations (min gap 4% of TD) and draw leader lines
     right_labels.sort(key=lambda t: t[0])
@@ -95,10 +101,10 @@ def render(project, well, path):
         axl.add_patch(Rectangle((0.1, li.top_ft), 0.8, li.bottom_ft - li.top_ft, fc=col, ec="k", lw=0.6))
         axl.text(0.5, (li.top_ft + li.bottom_ft) / 2, f"{li.description}\n{li.top_ft:,.0f}' - {li.bottom_ft:,.0f}'", ha="center", va="center", fontsize=6.5)
     axl.set_title("Anticipated lithology", fontsize=8)
-    ax.set_title(f"Proposed {well.label} - {well.aquifer} Aquifer", fontsize=9)
+    ax.set_title(f"{getattr(well, 'title_prefix', 'Proposed')} {well.label} - {well.aquifer} Aquifer", fontsize=9)
     fig.text(0.5, 0.015, "Not to scale horizontally", ha="center", fontsize=7, style="italic")
     return {"path": save(fig, path), "kind": "schematic",
-            "caption": f"Well profile and anticipated lithology for proposed {well.label}"}
+            "caption": getattr(well, "caption", None) or f"Well profile and anticipated lithology for proposed {well.label}"}
 
 
 def _frac(d):

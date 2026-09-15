@@ -1,0 +1,3 @@
+{{ ab.construction_sentence }} {{ ab.swl_sentence }} {{ ab.pump_sentence }} {{ tab.asbuilt }} lists the aquifer-condition and well and pump parameters required by Section III.4, and {{ fig.schematic_asbuilt }} shows the as-built profile{% if ab.has_lithology %} with the lithology logged during drilling{% endif %}.
+
+{% if opinions.lithology_basis %}{{ opinions.lithology_basis }}{% else %}[P.G. TO PROVIDE: confirmation that the screened interval corresponds to the target production zone identified from the logs and cuttings.]{% endif %}

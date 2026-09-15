@@ -17,8 +17,15 @@ def build_checklist(project) -> dict:
     def has_fig(prefix):
         return any(k.startswith(prefix) for k in figs)
 
+    sp_wells = an["spacing"]["wells"]
+    sp_rules_available = all(w["rule_available"] for w in sp_wells)
+    # A spacing distance computed from a multiplier that was never read from the District's rules document cannot be
+    # signed off automatically, even when no conflicting well is found.
+    sp_provisional = any(w.get("provisional") for w in sp_wells)
+
     evidence = {
-        "spacing": (all(w["rule_available"] for w in an["spacing"]["wells"]) and not an["spacing"]["any_violation"], "Section 1", "missing_data" if not all(w["rule_available"] for w in an["spacing"]["wells"]) else "needs_professional_input"),
+        "spacing": (sp_rules_available and not sp_provisional and not an["spacing"]["any_violation"], "Section 1",
+                    "missing_data" if not sp_rules_available else "needs_professional_input"),
         "figure_schematic": (has_fig("schematic_"), "Section 2 figure(s)", "missing_data"),
         "table_construction": (all(w.screen and w.casing and w.borehole for w in intake.proposed_wells), "Section 2 table", "missing_data"),
         "lithology": (all(w.anticipated_lithology for w in intake.proposed_wells) and bool(op.lithology_basis), "Section 2", "needs_professional_input"),
@@ -38,29 +45,49 @@ def build_checklist(project) -> dict:
         "table_drawdown_summary": (len(an["scenarios"]) > 0, "Section 6 tables", "missing_data"),
         "methodology": (True, "Section 6.1", "satisfied"),
         "figure_drawdown_well": (any(k.startswith("dd_proposed_") for k in figs), "Section 6 figures", "missing_data"),
-        "figure_drawdown_system": (any(k.startswith("dd_system_") for k in figs) or single_well_system, "Section 6 figures", "not_applicable" if single_well_system else "missing_data"),
-        "system_interference": (bool(an["system_interference"]) or single_well_system, "Section 6", "not_applicable" if single_well_system else "missing_data"),
+        "figure_drawdown_system": (any(k.startswith("dd_system_") for k in figs), "Section 6 figures", "not_applicable" if single_well_system else "missing_data"),
+        "system_interference": (bool(an["system_interference"]), "Section 6", "not_applicable" if single_well_system else "missing_data"),
         "table_impacts_well": (any(s["group"] == "proposed_only" for s in an["scenarios"]), "Section 6 tables", "missing_data"),
-        "table_impacts_system": (any(s["group"] == "system" for s in an["scenarios"]) or single_well_system, "Section 6 tables", "not_applicable" if single_well_system else "missing_data"),
+        "table_impacts_system": (any(s["group"] == "system" for s in an["scenarios"]), "Section 6 tables", "not_applicable" if single_well_system else "missing_data"),
     }
+    if intake.mode == "lsgcd_post_drilling":
+        ab = A.get("as_built") or {}
+        logs = ab.get("logs", {})
+        evidence.update({
+            "logs_min_curves": (logs.get("has_res_or_induction") and logs.get("has_sp_or_gamma"), "Section 2", "missing_data"),
+            "logs_open_hole": (logs.get("has_open_hole"), "Section 2", "missing_data"),
+            "logs_pvc": (logs.get("pvc_ok", True), "Section 2", "missing_data"),
+            "logs_las": (logs.get("all_las_present"), "Section 2", "missing_data"),
+            "test_data": (bool(ab.get("tests")), "Section 3 and Appendix C", "missing_data"),
+            "sc_and_t": (bool(ab.get("adopted", {}).get("t_ft2d")), "Section 3", "missing_data"),
+            "table_asbuilt": (True, "Section 1 table", "satisfied"),
+            "field_params": (bool(ab.get("field_params")), "Section 4 table", "missing_data"),
+            "lab_results": (A["water_quality"]["n_records"] > 0, "Section 4 table", "missing_data"),
+        })
     items = []
-    for item in district.get("checklist", []):
-        ok, where, fail_status = True, [], "missing_data"
+    key = "checklist_post" if intake.mode == "lsgcd_post_drilling" else "checklist"
+    for item in district.get(key, []):
+        where, statuses = [], []
         for ev in item.get("evidence", []):
             e = evidence.get(ev)
             if e is None:
                 continue
             present, loc, fs = e
             where.append(loc)
-            if not present:
-                ok = False
-                fail_status = fs
-        status = "satisfied" if ok else fail_status
-        if ok and not item.get("auto", True) and item.get("professional"):
-            # automated evidence present but the guideline needs a professional statement; satisfied only if opinion given
-            pass
-        if not ok and fail_status == "not_applicable":
+            if present:
+                statuses.append("satisfied")
+            else:
+                statuses.append(fs)
+        # evidence that is not applicable (e.g. system items on a single-well project) does not count against the item
+        applicable = [st for st in statuses if st != "not_applicable"]
+        if not statuses:
+            status = "missing_data"
+        elif not applicable:
             status = "not_applicable"
+        elif all(st == "satisfied" for st in applicable):
+            status = "satisfied"
+        else:
+            status = next(st for st in applicable if st != "satisfied")
         items.append({"id": item["id"], "text": item["text"], "status": status, "status_label": LABELS[status],
                       "where": "; ".join(dict.fromkeys(where)) + ((" - " + item["professional"]) if item.get("professional") and status != "satisfied" else ""),
                       "auto": item.get("auto", True)})

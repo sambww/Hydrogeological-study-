@@ -10,10 +10,15 @@ rules:
   version: null
   verified_on: null
   verified_by: null
+  source: unknown
+  source_note: null
+  recheck_after_days: 180
 report_threshold_gpm: null
 threshold_note: "District requirements not configured; confirm report triggers with the District."
 spacing:
   rule_reference: null
+  source: unknown
+  source_note: null
   well_to_well: []
   same_system_wells: flag
   property_line_setback_ft: null
@@ -29,3 +34,4 @@ gam:
   current_adopted: "Northern portion of the Gulf Coast Aquifer System GAM v4.1"
   note: "Confirm with District staff."
 checklist: []
+checklist_post: []
