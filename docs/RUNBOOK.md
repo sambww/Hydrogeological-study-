@@ -96,6 +96,17 @@ parameter maps the consultants include.
 
 ## D. Stand up a real LSGCD project
 
+**Before the first real project, check that this repository is private.** Everything under `projects/<slug>` except
+the `build/` output is tracked by git: the intake file, the District well export, and the water-quality samples. That
+is deliberate, because the intake is the record of exactly which numbers went into a report a professional sealed, and
+that record is worth keeping under version control. It also means a real project commits a customer's name, their
+water system, the site address, the well coordinates and their water-quality results. Those belong in a private
+repository.
+
+If the repository has to stay public, add `projects/` to `.gitignore` before scaffolding anything, and keep the
+project folders and their audit trail somewhere else. Do not leave it to be noticed later; by then the data is in the
+history, and removing it means rewriting history.
+
 1. Scaffold: `.venv/bin/hydrostudy new projects/<system>_<well>`.
 2. District well export (Guidelines II.B.3(h)): ask LSGCD permitting for the registered and permitted wells within one
    mile of the proposed well with registration and permit numbers, owner, address, total depth, screened interval,
