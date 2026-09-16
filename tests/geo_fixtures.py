@@ -17,6 +17,19 @@ def _feature(geom, props):
     return {"type": "Feature", "properties": props, "geometry": geom}
 
 
+def write_tract(project_dir: Path, lat: float, lon: float, half_x_ft: float, half_y_ft: float,
+                name: str = "tract.geojson") -> str:
+    """A rectangular tract centered on the site, big enough that a well has somewhere to move to."""
+    crs = LocalCRS(lat, lon)
+    data = project_dir / "data"
+    data.mkdir(exist_ok=True)
+    poly = {"type": "Polygon", "coordinates": [_ring(crs, [
+        (-half_x_ft, -half_y_ft), (half_x_ft, -half_y_ft), (half_x_ft, half_y_ft), (-half_x_ft, half_y_ft)])]}
+    (data / name).write_text(json.dumps({"type": "FeatureCollection",
+                                         "features": [_feature(poly, {"name": "Applicant tract"})]}))
+    return f"data/{name}"
+
+
 def write_fixtures(project_dir: Path, lat: float, lon: float) -> dict:
     """Write boundary, parcels, county, streams GeoJSON and springs CSV; return manifest file entries."""
     crs = LocalCRS(lat, lon)

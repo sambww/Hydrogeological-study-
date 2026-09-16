@@ -30,6 +30,10 @@ You are helping a water-well contractor produce a DRAFT hydrogeological report t
 3. Ask the user to place the District well export and TCEQ/TWDB water-quality export in `data/` following
    `docs/DATA_SOURCES.md`; fill `data/manifest.yaml` (sources, dates, hydrography notes, springs search).
 4. `hydrostudy validate projects/<slug>` and fix schema errors with the user.
+4a. If the location is not yet fixed, or the user asks where the well should go or how much a tract can support, run
+   `hydrostudy siting projects/<slug>` (needs the tract polygon). Report the compliant acreage, the ranked locations
+   with the rate each supports and what bound it, and the three cautions the command prints. Do not present the
+   ranking as the decision: it knows distance, rate and drawdown, not access, power, easements or the septic field.
 5. `hydrostudy run projects/<slug>`. Report back: drawdown results per scenario, spacing result, checklist counts,
    the list of `[P.G. TO PROVIDE]` placeholders and the flags. Open `build/figures/*.png` and sanity-check them.
 6. Iterate on inputs until only reviewer items remain. Hand the DOCX/PDF to the sealing professional with the
@@ -44,5 +48,7 @@ if a series is missing, leave the test out so the checklist flags it.
 
 ## Useful checks
 - Spacing radius = multiplier x gpm (LSGCD: Chicot/Evangeline 2.0, Jasper 1.5, Catahoula 1.0 ft/gpm; verify).
+- The rate spacing allows at a point = distance to the nearest counting well / multiplier. A plugged well and the
+  applicant's own wells do not count.
 - Max-production days = annual volume / (rate x 1440).
 - Pumped-well drawdown depends on `r_w_ft`; state it and keep it consistent across the system wells.

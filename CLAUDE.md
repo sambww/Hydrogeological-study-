@@ -32,6 +32,14 @@ Use the `/hydro-report` skill (`.claude/skills/hydro-report/SKILL.md`) to walk a
   the District's rule and put the basis in the provenance note; the third makes it state the distance applied and ask
   the reviewer to confirm. Every tier expires after `recheck_after_days`, on a per-scope date
   (`districts/status.py`). Re-verify before each submittal; see `docs/RUNBOOK.md` section G.
+- `hydrostudy siting <project>` (`analysis/siting.py`, `figures/siting_map.py`) answers where on the tract the well may
+  go and what it can produce there, and writes `build/siting.json`. It is a design tool, not a report section: it does
+  not touch the report. Its spacing test is `analysis/spacing.py::counts_against_spacing`, the same predicate the
+  compliance analysis uses - never inline that test in one of them, or the envelope one draws stops being the envelope
+  the other accepts. The spacing limit is closed-form (distance / multiplier); the drawdown limits are NOT, because
+  max-production duration is `volume / (rate x 1440)`, so a lower rate pumps for longer - rate and duration are solved
+  together, iterating down from the spacing limit. Never invert a drawdown budget at the target rate's duration.
+  See `docs/RUNBOOK.md` section I.
 - Never overwrite a final report: bump `report.revision.number`.
 - Everything under `projects/<slug>` except `build/` is tracked on purpose: the intake is the record of what
   went into a sealed report. It therefore carries customer names, addresses, well coordinates and water-quality
