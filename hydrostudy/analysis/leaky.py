@@ -83,17 +83,27 @@ def leakance_per_day(k_prime_ftd: float, thickness_ft: float) -> float:
     return k_prime_ftd / thickness_ft
 
 
-def leakage_factor_ft(t_ft2d: float, leakance: float) -> float:
-    """B = sqrt(T / (K'/b')), the distance over which leakage becomes the dominant supply."""
-    if t_ft2d <= 0 or leakance <= 0:
+def leakage_factor_ft(t_ft2d, leakance: float):
+    """B = sqrt(T / (K'/b')), the distance over which leakage becomes the dominant supply.
+
+    `t_ft2d` may be an array of parameter draws, in which case so is B.
+    """
+    t_arr = np.asarray(t_ft2d, dtype=float)
+    if np.any(t_arr <= 0) or leakance <= 0:
         raise ValueError("transmissivity and leakance must be positive")
-    return math.sqrt(t_ft2d / leakance)
+    out = np.sqrt(t_arr / leakance)
+    return float(out) if out.ndim == 0 else out
 
 
-def leaky_drawdown(q_gpm: float, t_ft2d: float, s: float, r_ft, t_days, leakance: float):
-    """Drawdown (ft) at radius r after t days from one well pumping q_gpm through a leaky confining unit."""
+def leaky_drawdown(q_gpm: float, t_ft2d, s, r_ft, t_days, leakance: float):
+    """Drawdown (ft) at radius r after t days from one well pumping q_gpm through a leaky confining unit.
+
+    As with `theis_drawdown`, T and S may be arrays of parameter draws.
+    """
     t_days = np.asarray(t_days, dtype=float)
-    if t_ft2d <= 0 or s <= 0 or np.any(t_days <= 0):
+    t_ft2d = np.asarray(t_ft2d, dtype=float)
+    s = np.asarray(s, dtype=float)
+    if np.any(t_ft2d <= 0) or np.any(s <= 0) or np.any(t_days <= 0):
         raise ValueError("T, S and t must be positive")
     r = np.asarray(r_ft, dtype=float)
     if np.any(r <= 0):

@@ -1,4 +1,4 @@
-"""hydrostudy command line: new | import-intake | validate | run | render | siting | wellfield | checklist | doctor"""
+"""hydrostudy command line: new | import-intake | validate | run | render | siting | wellfield | uncertainty | checklist | doctor"""
 
 from __future__ import annotations
 
@@ -268,6 +268,73 @@ def _print_wellfield(out, json_path):
         print(f"Figure: {out['figure']['path']}")
 
 
+def cmd_uncertainty(args):
+    from hydrostudy.analysis.uncertainty import UncertaintyNotPossible, UncertaintyRequest, propagate
+    from hydrostudy.pipeline import Project, dump_json
+    p = Project(args.project_dir)
+    p.run_analysis()
+    try:
+        quantiles = tuple(sorted(float(x) for x in args.quantiles.split(",")))
+    except ValueError:
+        print(f"--quantiles must be a comma-separated list of fractions, not {args.quantiles!r}", file=sys.stderr)
+        return 2
+    if not all(0 < q < 1 for q in quantiles):
+        print("--quantiles must be strictly between 0 and 1 (e.g. 0.1,0.5,0.9)", file=sys.stderr)
+        return 2
+    req = UncertaintyRequest(draws=args.draws, seed=args.seed, quantiles=quantiles,
+                             thresholds_ft=tuple(args.threshold_ft or ()), aquifer=args.aquifer,
+                             scenario_key=args.scenario)
+    try:
+        out = propagate(p, req)
+    except UncertaintyNotPossible as e:
+        print(f"cannot run an uncertainty analysis: {e}", file=sys.stderr)
+        return 2
+    # The raw draws are tens of thousands of floats per receptor: they go to the figure, not the JSON.
+    samples = out.pop("_samples")
+    if not args.no_figure:
+        from hydrostudy.figures import uncertainty_plot
+        fig_dir = p.build_dir / "figures"
+        fig_dir.mkdir(parents=True, exist_ok=True)
+        out["figure"] = uncertainty_plot.render(p, out, samples, fig_dir / "fig_uncertainty.png")
+    dump_json(out, p.build_dir / "uncertainty.json")
+    _print_uncertainty(out, quantiles, p.build_dir / "uncertainty.json")
+    return 0
+
+
+def _print_uncertainty(out, quantiles, json_path):
+    par = out["parameters"]
+    print(f"\nUncertainty in {out['scenario_title']} ({out['aquifer']})")
+    print(f"  Draws:         {out['draws']:,} with seed {out['seed']} (both recorded; the interval is reproducible)")
+    print(f"  Solution:      {out['solution']['citation']}")
+    for key, label in (("t_ft2d", "T (ft2/day)"), ("s", "S")):
+        d = par[key]
+        fmt = (lambda v: f"{v:,.0f}") if key == "t_ft2d" else (lambda v: f"{v:.2e}")
+        if d["declared"]:
+            print(f"  {label:<14} {d['kind']} as declared: p10 {fmt(d['declared_p10'])} to "
+                  f"p90 {fmt(d['declared_p90'])}, intake value {fmt(d['intake_value'])}")
+            print(f"                 source: {d['source']}")
+        else:
+            print(f"  {label:<14} held at the intake value {fmt(d['intake_value'])} (no spread declared)")
+    if par["log_correlation"] is not None:
+        print(f"  Correlation:   {par['log_correlation']:+.2f} between log T and log S")
+
+    qkeys = [f"{q:g}" for q in quantiles]
+    head = "  ".join(f"p{int(float(k) * 100):<3}" for k in qkeys)
+    print(f"\n  Receptor         Reported   pct   {head}")
+    for r in out["receptors"]:
+        cells = "  ".join(f"{r['quantiles'][k]['ft']:6.1f}" for k in qkeys)
+        pct = "" if r["deterministic_percentile"] is None else f"{r['deterministic_percentile']:>4.0%}"
+        print(f"  {r['label']:<16} {r['deterministic_ft']:8.1f}  {pct}   {cells}")
+        if r.get("exceedance"):
+            exc = "   ".join(f"P(>{float(k):,.0f} ft) = {v:.0%}" for k, v in r["exceedance"].items())
+            print(f"                     {exc}")
+    for n in out["notes"]:
+        print(f"\n  Note: {n}")
+    print(f"\nWrote {json_path}")
+    if out.get("figure"):
+        print(f"Figure: {out['figure']['path']}")
+
+
 def cmd_validate(args):
     from pydantic import ValidationError
 
@@ -415,6 +482,19 @@ def main(argv=None):
     s.add_argument("--well-depth-ft", type=float, default=None, help="planned well depth, for the cost estimate")
     s.add_argument("--no-figure", action="store_true")
     s.set_defaults(fn=cmd_wellfield)
+    s = sub.add_parser("uncertainty", help="propagate declared parameter spreads into the reported drawdown")
+    s.add_argument("project_dir")
+    s.add_argument("--draws", type=int, default=10000, help="Monte Carlo draws (default 10,000)")
+    s.add_argument("--seed", type=int, default=20260917,
+                   help="random seed, recorded in the output so the interval is reproducible")
+    s.add_argument("--quantiles", default="0.1,0.5,0.9", help="quantiles to report (default 0.1,0.5,0.9)")
+    s.add_argument("--threshold-ft", type=float, action="append",
+                   help="report the probability drawdown exceeds this many feet (repeatable)")
+    s.add_argument("--aquifer", default=None, help="which aquifer (default: the first proposed well's)")
+    s.add_argument("--scenario", default=None,
+                   help="scenario key (default: the whole system at maximum production)")
+    s.add_argument("--no-figure", action="store_true")
+    s.set_defaults(fn=cmd_uncertainty)
     s = sub.add_parser("validate", help="validate intake.yaml and review.yaml")
     s.add_argument("project_dir")
     s.set_defaults(fn=cmd_validate)

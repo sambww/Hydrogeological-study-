@@ -35,6 +35,11 @@ impact at a neighbour's well. The rate split is a linear program, so when a limi
 the placement is a search, so the answer is a good field rather than a proven optimum, and it says so
 (`docs/RUNBOOK.md` section K).
 
+`uncertainty` answers the question a reviewer asks next: how sure is that number? Declare how well T and
+S are known, with a source, and it propagates the spread into every drawdown the report quotes, reporting
+the probability that drawdown at a given well exceeds a given figure. It will not run on a guessed spread
+(`docs/RUNBOOK.md` section L).
+
 Beyond Theis, two solutions are available and both default to off: the Hantush-Jacob leaky-aquifer
 solution for a confining unit that passes water, and barrier or recharge boundaries by the method of
 images. Each changes the methodology section, its equations and its citations as well as the numbers,

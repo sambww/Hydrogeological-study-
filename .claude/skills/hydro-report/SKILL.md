@@ -45,6 +45,14 @@ You are helping a water-well contractor produce a DRAFT hydrogeological report t
    placeholder list. When they return `review.yaml`, re-run; for the sealed version set `reviewer.status: final`
    and bump `report.revision.number`.
 
+## When asked how sure the numbers are
+Run `hydrostudy uncertainty projects/<slug> --threshold-ft <figure>`. It needs a declared spread with a
+source on the aquifer's parameters and refuses without one: do NOT invent a range to get it to run, and do
+not suggest one as if it were the tool's. If the intake has a site-test T and a GAM T that disagree, say
+that those two bracket a range the reviewer may adopt or widen, and leave the choice with them. When
+presenting the result, lead with the exceedance probability at the well that matters, and state where the
+report's current value falls as a percentile so nobody reads the median as a correction.
+
 ## Post-drilling submittal
 When the well has been drilled and tested, copy the project, set `mode: lsgcd_post_drilling`, and fill the `as_built:`
 block (as-built construction, static level and date, pump, log inventory with LAS files, aquifer-test CSVs, field

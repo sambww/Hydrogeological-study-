@@ -26,6 +26,9 @@ First time on a machine: follow `docs/RUNBOOK.md` section A (setup and `hydrostu
    wells, where and at what rate each to meet a demand, and prints the trade-off against well count. Write
    the chosen field into `proposed_wells` and carry on. See `docs/RUNBOOK.md` section K.
 5. **Run**: `hydrostudy run projects/<slug>`. Read the console summary: scenario results, checklist, placeholders, flags.
+5a. **Quantify the confidence** (optional, and worth it for a contested system):
+   `hydrostudy uncertainty projects/<slug> --threshold-ft <the figure that matters>`. Needs a declared
+   spread on the aquifer's parameters; see `docs/RUNBOOK.md` section L.
 6. **Reviewer pass**: build the reviewer's sheet with `hydrostudy review-sheet projects/<slug>` and have Claude
    publish it, or let the P.G./P.E. fill `review.yaml` directly (`opinions`, any `decisions` overrides, reviewer
    identity). Import a sheet submission with `hydrostudy import-review projects/<slug> <submission>.json`,
