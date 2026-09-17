@@ -12,6 +12,7 @@ import pytest
 import yaml
 
 from hydrostudy.analysis.siting import SitingNotPossible, SitingRequest, analyze_siting
+from hydrostudy.analysis.spacing import SPACING_ROUNDTRIP_FT
 from hydrostudy.analysis.theis import theis_drawdown
 from hydrostudy.pipeline import Project
 from tests.conftest import ROOT
@@ -50,7 +51,11 @@ def test_the_spacing_rate_at_a_point_is_the_distance_to_the_nearest_counting_wel
         d = min(math.hypot(c["x_ft"] - n["x_ft"], c["y_ft"] - n["y_ft"])
                 for n in p.artifacts["nearby_wells"] if n["map_id"] in counting)
         assert c["nearest_counting_well"]["distance_ft"] == pytest.approx(d, rel=1e-9)
-        assert c["max_rate_spacing_gpm"] == pytest.approx(d / out["ft_per_gpm"], rel=1e-9)
+        # Strictly inside the distance, not equal to it: the compliance test counts a well at exactly the
+        # required radius as a conflict, so a cap computed to the last float would not comply.
+        assert c["max_rate_spacing_gpm"] == pytest.approx(
+            (d - SPACING_ROUNDTRIP_FT) / out["ft_per_gpm"], rel=1e-9)
+        assert c["max_rate_spacing_gpm"] * out["ft_per_gpm"] < d
 
 
 def test_the_applicants_own_wells_and_plugged_wells_do_not_limit_the_rate(sited):

@@ -53,6 +53,20 @@ Use the `/hydro-report` skill (`.claude/skills/hydro-report/SKILL.md`) to walk a
   max-production duration is `volume / (rate x 1440)`, so a lower rate pumps for longer - rate and duration are solved
   together, iterating down from the spacing limit. Never invert a drawdown budget at the target rate's duration.
   See `docs/RUNBOOK.md` section I.
+- `hydrostudy wellfield <project> --rate N` (`analysis/wellfield.py`, `figures/wellfield_map.py`) designs a
+  field for a demand: how many wells, where, at what rate each, writing `build/wellfield.json`. Also a
+  design tool that does not touch the report. For fixed positions the rate split is an LP (scipy linprog)
+  because every constraint is linear in the rates - never replace that with a heuristic. Positions are
+  greedy + coordinate descent on `siting.candidate_grid`, so the field is good, not provably optimal, and
+  the output must keep saying so. The search evaluates layouts at a common duration (`_evaluate(fast=True)`)
+  and re-solves the winner exactly; that is 20,000 LPs down to a few hundred. Costs are only ever the
+  operator's own inputs. Shares `candidate_grid`, `production_days` and `fixed_system_wells` with
+  `siting.py` - keep them shared so both search the same points. See `docs/RUNBOOK.md` section K.
+- Any "largest rate this distance allows" goes through `spacing.max_rate_for_distance`, never
+  `distance / multiplier`: `spacing_analysis` counts `distance <= required` as a CONFLICT, so a cap
+  computed to the last float does not comply, and a designed location round-trips through lat/lon before
+  the pipeline re-measures it. `SPACING_ROUNDTRIP_FT` covers that; the operator's `--spacing-safety-ft`
+  is a separate margin on top for the accuracy of the District's coordinates.
 - Never overwrite a final report: bump `report.revision.number`.
 - Everything under `projects/<slug>` except `build/` is tracked on purpose: the intake is the record of what
   went into a sealed report. It therefore carries customer names, addresses, well coordinates and water-quality

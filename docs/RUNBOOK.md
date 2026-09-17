@@ -423,3 +423,100 @@ Four things to know before using one:
 - Flags to read before sealing: `LEAKANCE_MISSING`, `LEAKANCE_UNCITED`, `LEAKY_BUT_CONFINED` (a leaky
   solution on an aquifer the intake calls confined), `LEAKAGE_REACH` (leakage too distant to matter, or
   so close the result is insensitive to duration) and `HYDRAULIC_BOUNDARIES` (the truncation note).
+
+## K. Designing a well field for a demand
+
+`hydrostudy siting` answers "where may this one well go, and what can it make there". A municipality does
+not ask that. It asks for 700 gpm. `hydrostudy wellfield` answers the question that follows: **how many
+wells, where, and at what rate each.**
+
+```
+.venv/bin/hydrostudy wellfield projects/<slug> --rate 700 --available-drawdown-ft 250
+.venv/bin/hydrostudy wellfield projects/<slug> --rate 700 --max-wells 5 --grid-ft 200 \
+    --setback-ft 100 --available-drawdown-ft 150 --min-well-spacing-ft 500 --spacing-safety-ft 100 \
+    --max-well-rate 400 --max-interference-ft 45 \
+    --cost-per-well 25000 --cost-per-ft 45 --well-depth-ft 700
+```
+
+Same two inputs as the siting search: the tract polygon and `data/district_wells.csv`.
+
+### What it optimises, and what it only searches
+
+**The rate split is optimal.** For a fixed set of well positions, every constraint is linear in the rate
+vector: spacing caps each well, drawdown is linear in the rate (Theis and Hantush-Jacob both), and the
+demand is a sum. So the best rates at those positions come out of a linear program, not a rule of thumb.
+When a limit binds, it binds exactly: you will see wells sitting on precisely 150.0 ft of drawdown.
+
+**The positions are searched, not solved.** Wells interfere with each other, so placement is non-convex.
+The tool places each well where it adds the most deliverable rate, then revisits each in turn and moves it
+to the best remaining point until nothing improves. That finds a good field. It does not prove there is no
+better one, and the output says so every time.
+
+### The trade-off table is the point
+
+```
+  Wells   Delivers    Worst neighbour   Deepest well   Meets demand
+     1     418.3 gpm         50.5 ft         150 ft             no
+     2     700.0 gpm         61.7 ft         150 ft            yes <-
+```
+
+The recommendation is the **fewest wells that meet the demand**, because well count dominates cost. The
+rows above it are what you show a customer who asks why they cannot have one well.
+
+Three results worth knowing how to read:
+
+1. **A tighter pump means more, smaller wells.** On the example tract, 700 gpm needs one well at 250 ft of
+   available drawdown, two at 150 ft, and four at 110 ft. `--available-drawdown-ft` is the single most
+   consequential input, and it is a fact about the static level and the pump setting, not a preference.
+2. **When a neighbour's drawdown is the binding constraint, more wells barely help.** Spreading the same
+   demand across a tract does not change the distance to a well half a mile away by much. The search stops
+   adding wells once another one buys nothing, rather than printing the same field under five well counts.
+   Read the split on that well before concluding the cap is the problem: the output separates what the new
+   field adds from what the existing system already imposes, and on a system with a well already pumping
+   most of the neighbour's drawdown is there before the new field starts. A 45-ft cap on the example turns
+   out to leave only 18 ft for new production.
+3. **"700 gpm is not achievable here" is an answer.** It comes with the best field, the shortfall, and
+   which limit bound it.
+
+### Margin, and why the default is only half a foot
+
+An optimal rate split sits *on* its binding constraint, and for spacing that is a problem twice over.
+
+The first is arithmetic. The District's test, as the compliance analysis applies it, counts a well at
+*exactly* the required radius as a conflict, so a rate computed to the last floating-point bit does not
+comply. A designed location also leaves as latitude and longitude and comes back through a projection, so
+the distance is not bit-identical when the pipeline recomputes it. Both the siting search and the designer
+therefore hold back `spacing.SPACING_ROUNDTRIP_FT` (half a foot, hydrologically nothing) so a design
+survives that round trip. `tests/test_wellfield.py` pushes every well onto its limit and re-runs the
+project to prove it.
+
+The second is real-world and is yours to decide. Half a foot clears the arithmetic; it does nothing about
+the accuracy of the coordinates in a District well export. A design clearing the nearest well by 20 ft is
+one corrected coordinate away from a violation. The tool reports `spacing_margin_ft` for every well and
+warns when it is under 50 ft.
+
+**Run it both ways.** Holding back a margin often costs nothing at all, because the search moves the wells
+instead of cutting their rates. On the example, `--spacing-safety-ft 100` still delivers 700 gpm and raises
+the tightest margin from 21 ft to 195 ft. That is a free improvement, and you only see it by asking.
+
+### Costs
+
+No dollar figure appears unless you pass `--cost-per-well`, `--cost-per-ft` and `--well-depth-ft`. Drilling
+costs are a fact about your market and your rig; this tool has no business guessing them.
+
+### Limits
+
+- Hydraulic boundaries (section J) are refused, for the same reason the siting search refuses them.
+- Well-to-well spacing between the *new* wells is a design preference, not a District rule: the LSGCD rule
+  flags the applicant's own wells inside a spacing radius rather than forbidding them. Set
+  `--min-well-spacing-ft` deliberately.
+- The field is designed in one aquifer at a time (`--aquifer`).
+- Nothing here checks access, power, easements, the flood plain or where a rig can physically set up. The
+  output is a shortlist to walk, not a plat.
+
+### From a design to a report
+
+The designer does not touch `intake.yaml`. When you have a field you like, write its wells into
+`proposed_wells` (coordinates and `max_rate_gpm` from `build/wellfield.json`) and run the report as usual.
+`tests/test_wellfield.py` does exactly that and requires `spacing_analysis` to report no conflict and the
+pipeline's drawdown to match the designer's within 2%.
