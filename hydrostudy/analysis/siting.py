@@ -34,7 +34,7 @@ from shapely import contains_xy, distance, points
 
 from hydrostudy.analysis.scenarios import max_production_days
 from hydrostudy.analysis.solution import resolve_solution
-from hydrostudy.analysis.spacing import counts_against_spacing
+from hydrostudy.analysis.spacing import counts_against_spacing, max_rate_for_distance
 from hydrostudy.analysis.theis import PumpingWell
 from hydrostudy.districts.status import rule_status
 from hydrostudy.units import DAYS_PER_YEAR, MIN_PER_DAY
@@ -112,7 +112,7 @@ def _sited_well(intake, well_id: str | None):
         f"(proposed: {', '.join(w.id for w in intake.proposed_wells)})")
 
 
-def _fixed_system_wells(intake, review, sited_id: str) -> list[PumpingWell]:
+def fixed_system_wells(intake, review, sited_id: str) -> list[PumpingWell]:
     """The system wells that stay put while the sited well moves, at their permitted rates."""
     xy = intake._local_xy
     out = []
@@ -128,8 +128,11 @@ def _fixed_system_wells(intake, review, sited_id: str) -> list[PumpingWell]:
     return out
 
 
-def _grid(boundary, spacing_ft: float, setback_ft: float):
-    """Candidate points inside the tract and at least `setback_ft` from its edge, with edge distances."""
+def candidate_grid(boundary, spacing_ft: float, setback_ft: float):
+    """Candidate points inside the tract and at least `setback_ft` from its edge, with edge distances.
+
+    Shared with the well-field designer (`analysis/wellfield.py`) so both search the same points.
+    """
     minx, miny, maxx, maxy = boundary.bounds
     nx = max(2, int(math.floor((maxx - minx) / spacing_ft)) + 1)
     ny = max(2, int(math.floor((maxy - miny) / spacing_ft)) + 1)
@@ -162,7 +165,7 @@ def _rate_cap(budget_ft: float, fixed_ft, unit_ft):
     return np.maximum(cap, 0.0)
 
 
-def _production_days(rate_gpm, fixed_total_gpm: float, annual_volume_gal: float):
+def production_days(rate_gpm, fixed_total_gpm: float, annual_volume_gal: float):
     """Days to produce the permitted annual volume at this rate, capped at a year (element-wise)."""
     total = np.maximum(np.asarray(rate_gpm, dtype=float) + fixed_total_gpm, 1e-9)
     return np.minimum(annual_volume_gal / (total * MIN_PER_DAY), DAYS_PER_YEAR)
@@ -211,7 +214,7 @@ def analyze_siting(project, request: SitingRequest | None = None) -> dict:
     r_w = review.decisions.r_w_ft.get(well.id) if review.decisions.r_w_ft else None
     r_w = float(r_w or well.effective_r_w_ft())
 
-    fixed = _fixed_system_wells(intake, review, well.id)
+    fixed = fixed_system_wells(intake, review, well.id)
     fixed_same_aq = [w for w in fixed if w.aquifer == well.aquifer]
     system_rate = target + sum(w.q_gpm for w in fixed)
     duration = max_production_days(intake.permit.annual_volume_gal, system_rate)
@@ -240,13 +243,15 @@ def analyze_siting(project, request: SitingRequest | None = None) -> dict:
     else:
         setback_ft, setback_basis = 0.0, "none: no property-line setback is recorded for this district"
 
-    xs, ys, edge = _grid(boundary, req.grid_spacing_ft, setback_ft)
+    xs, ys, edge = candidate_grid(boundary, req.grid_spacing_ft, setback_ft)
     cwx = np.array([n["x_ft"] for n in counting])
     cwy = np.array([n["y_ft"] for n in counting])
     d_counting = np.hypot(xs[:, None] - cwx[None, :], ys[:, None] - cwy[None, :])
     nearest_idx = d_counting.argmin(axis=1)
     nearest_ft = d_counting.min(axis=1)
-    rate_spacing = nearest_ft / mult
+    # Strictly inside the distance, not equal to it: the compliance test counts a well at exactly the
+    # required radius as a conflict (`spacing.max_rate_for_distance`).
+    rate_spacing = max_rate_for_distance(nearest_ft, mult)
 
     fixed_total = sum(w.q_gpm for w in fixed)
     nb_x = np.array([n["x_ft"] for n in neighbours]) if neighbours else np.zeros(0)
@@ -263,7 +268,7 @@ def analyze_siting(project, request: SitingRequest | None = None) -> dict:
 
     def caps_at(rate_gpm):
         """Every rate limit, evaluated over the duration that rate itself implies (per candidate)."""
-        t = _production_days(rate_gpm, fixed_total, intake.permit.annual_volume_gal)
+        t = production_days(rate_gpm, fixed_total, intake.permit.annual_volume_gal)
         out = {"spacing": rate_spacing}
         if neighbours and req.max_interference_ft is not None:
             unit = dd(1.0, t_ft2d, s, r_nb, t[:, None])

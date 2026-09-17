@@ -1,4 +1,4 @@
-"""hydrostudy command line: new | import-intake | validate | run | render | siting | checklist | doctor"""
+"""hydrostudy command line: new | import-intake | validate | run | render | siting | wellfield | checklist | doctor"""
 
 from __future__ import annotations
 
@@ -178,6 +178,96 @@ def _print_siting(out, json_path):
         print(f"Figure: {out['figure']['path']}")
 
 
+def cmd_wellfield(args):
+    from hydrostudy.analysis.wellfield import FieldNotPossible, FieldRequest, design_field
+    from hydrostudy.pipeline import Project, dump_json
+    p = Project(args.project_dir)
+    p.run_analysis()
+    req = FieldRequest(target_rate_gpm=args.rate, max_wells=args.max_wells,
+                       grid_spacing_ft=args.grid_ft, setback_ft=args.setback_ft,
+                       min_well_rate_gpm=args.min_well_rate, max_well_rate_gpm=args.max_well_rate,
+                       available_drawdown_ft=args.available_drawdown_ft,
+                       max_interference_ft=args.max_interference_ft,
+                       min_well_spacing_ft=args.min_well_spacing_ft, aquifer=args.aquifer,
+                       spacing_safety_ft=args.spacing_safety_ft,
+                       cost_per_well=args.cost_per_well, cost_per_ft=args.cost_per_ft,
+                       well_depth_ft=args.well_depth_ft)
+    try:
+        out = design_field(p, req)
+    except FieldNotPossible as e:
+        print(f"cannot design a well field: {e}", file=sys.stderr)
+        return 2
+    dump_json(out, p.build_dir / "wellfield.json")
+    if not args.no_figure:
+        from hydrostudy.figures import wellfield_map
+        fig_dir = p.build_dir / "figures"
+        fig_dir.mkdir(parents=True, exist_ok=True)
+        out["figure"] = wellfield_map.render(p, out, fig_dir / "fig_wellfield.png")
+        dump_json(out, p.build_dir / "wellfield.json")
+    _print_wellfield(out, p.build_dir / "wellfield.json")
+    return 0
+
+
+def _print_wellfield(out, json_path):
+    from hydrostudy.geo.crs import format_dms
+    rec = out["recommended"]
+    print(f"\nWell field for {out['target_rate_gpm']:,.0f} gpm in the {out['aquifer']}")
+    print(f"  Spacing rule:  {out['ft_per_gpm']:g} ft/gpm"
+          f"{'; PROVISIONAL' if out['provisional'] else ''}")
+    print(f"  Aquifer:       T={out['t_ft2d']:,.0f} ft2/day, S={out['s']:.2e}, "
+          f"{out['solution']['citation']}")
+    limits = [f"{out['min_well_rate_gpm']:,.0f} gpm minimum per well"]
+    if out["max_well_rate_gpm"]:
+        limits.append(f"{out['max_well_rate_gpm']:,.0f} gpm maximum per well")
+    if out["available_drawdown_ft"]:
+        limits.append(f"{out['available_drawdown_ft']:,.0f} ft available drawdown")
+    if out["max_interference_ft"]:
+        limits.append(f"{out['max_interference_ft']:,.2f} ft interference cap")
+    if out["min_well_spacing_ft"]:
+        limits.append(f"{out['min_well_spacing_ft']:,.0f} ft between new wells")
+    if out["spacing_safety_ft"]:
+        limits.append(f"{out['spacing_safety_ft']:,.0f} ft held back from every spacing limit")
+    print(f"  Limits:        {'; '.join(limits)}")
+    print(f"  Tract:         {out['grid']['tract_area_acres']:,.1f} acres, "
+          f"{out['grid']['candidates']} candidate points at {out['grid']['spacing_ft']:,.0f} ft")
+    if out["existing_system_rate_gpm"]:
+        print(f"  Existing:      {out['existing_system_rate_gpm']:,.0f} gpm already permitted in the system")
+
+    print("\n  Wells   Delivers    Worst neighbour   Deepest well   Meets demand")
+    for o in out["options"]:
+        nb = o["worst_neighbour"]
+        chosen = " <-" if o is rec else ""
+        print(f"    {o['wells_drilled']:>2}   {o['total_rate_gpm']:>7.1f} gpm   "
+              f"{(nb['drawdown_ft'] if nb else 0):>10.1f} ft   {o['max_well_drawdown_ft']:>9.0f} ft   "
+              f"{'yes' if o['meets_target'] else 'no':>12}{chosen}")
+
+    if not rec["meets_target"]:
+        print(f"\n  {out['target_rate_gpm']:,.0f} gpm is NOT achievable on this tract under these limits. "
+              f"The best field delivers {rec['total_rate_gpm']:,.1f} gpm, "
+              f"{rec['shortfall_gpm']:,.0f} gpm short.")
+    print(f"\n  Recommended: {rec['wells_drilled']} well(s), {rec['total_rate_gpm']:,.1f} gpm over "
+          f"{rec['duration_days']:,.1f} days")
+    for w in rec["wells"]:
+        print(f"   #{w['slot']}. {format_dms(w['lat'], 'lat')}  {format_dms(w['lon'], 'lon')}")
+        print(f"       {w['rate_gpm']:,.1f} gpm, {w['drawdown_ft']:,.1f} ft drawdown, needs "
+              f"{w['required_spacing_ft']:,.0f} ft spacing and has "
+              f"{w['nearest_counting_well']['distance_ft']:,.0f} ft to map ID "
+              f"{w['nearest_counting_well']['map_id']}: {w['spacing_margin_ft']:,.0f} ft of margin")
+    if rec["worst_neighbour"]:
+        nb = rec["worst_neighbour"]
+        print(f"       worst impact {nb['drawdown_ft']:,.2f} ft at map ID {nb['map_id']} "
+              f"({nb['owner'] or 'owner not recorded'}): "
+              f"{nb['drawdown_from_new_wells_ft']:,.2f} ft from the new field, "
+              f"{nb['drawdown_from_fixed_wells_ft']:,.2f} ft from the existing system")
+    if rec["estimated_cost"] is not None:
+        print(f"       estimated cost ${rec['estimated_cost']:,.0f} at the costs supplied")
+    for n in out["notes"]:
+        print(f"\n  Note: {n}")
+    print(f"\nWrote {json_path}")
+    if out.get("figure"):
+        print(f"Figure: {out['figure']['path']}")
+
+
 def cmd_validate(args):
     from pydantic import ValidationError
 
@@ -300,6 +390,31 @@ def main(argv=None):
                         "(default: twice the grid spacing, at least 200 ft)")
     s.add_argument("--no-figure", action="store_true")
     s.set_defaults(fn=cmd_siting)
+    s = sub.add_parser("wellfield", help="design a well field: how many wells, where, and at what rate")
+    s.add_argument("project_dir")
+    s.add_argument("--rate", type=float, required=True, help="total system demand in gpm")
+    s.add_argument("--max-wells", type=int, default=6, help="most wells to consider (default 6)")
+    s.add_argument("--grid-ft", type=float, default=200.0, help="candidate grid spacing (default 200)")
+    s.add_argument("--setback-ft", type=float, default=None, help="keep wells this far from the property line")
+    s.add_argument("--available-drawdown-ft", type=float, default=None,
+                   help="drawdown available at each well (static level to pump intake)")
+    s.add_argument("--max-interference-ft", type=float, default=None,
+                   help="cap drawdown at any off-system well in the same aquifer")
+    s.add_argument("--min-well-rate", type=float, default=50.0,
+                   help="a well below this rate is not worth drilling (default 50 gpm)")
+    s.add_argument("--max-well-rate", type=float, default=None,
+                   help="most any single well can produce (pump, column and screen limits)")
+    s.add_argument("--min-well-spacing-ft", type=float, default=None,
+                   help="keep the new wells this far apart (a design preference, not a District rule)")
+    s.add_argument("--spacing-safety-ft", type=float, default=0.0,
+                   help="hold this much back from every spacing limit, as margin against the accuracy of "
+                        "the District's well coordinates (default 0, which designs right on the limit)")
+    s.add_argument("--aquifer", default=None, help="which aquifer to design in (default: the first proposed well's)")
+    s.add_argument("--cost-per-well", type=float, default=None, help="your fixed cost per well")
+    s.add_argument("--cost-per-ft", type=float, default=None, help="your drilling cost per foot")
+    s.add_argument("--well-depth-ft", type=float, default=None, help="planned well depth, for the cost estimate")
+    s.add_argument("--no-figure", action="store_true")
+    s.set_defaults(fn=cmd_wellfield)
     s = sub.add_parser("validate", help="validate intake.yaml and review.yaml")
     s.add_argument("project_dir")
     s.set_defaults(fn=cmd_validate)

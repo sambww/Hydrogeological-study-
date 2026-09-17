@@ -29,6 +29,12 @@ satisfies the District's spacing rule, ranks them by the drawdown they put on ne
 maximum rate each one supports and which limit bound it. It answers "where can this well go?" before the report has
 to answer "does this location comply?" (`docs/RUNBOOK.md` section I).
 
+`wellfield` goes one step further: give it a demand in gpm and it designs the field, deciding how many
+wells, where, and at what rate each, subject to spacing, the drawdown the pumps can lift and a cap on the
+impact at a neighbour's well. The rate split is a linear program, so when a limit binds it binds exactly;
+the placement is a search, so the answer is a good field rather than a proven optimum, and it says so
+(`docs/RUNBOOK.md` section K).
+
 Beyond Theis, two solutions are available and both default to off: the Hantush-Jacob leaky-aquifer
 solution for a confining unit that passes water, and barrier or recharge boundaries by the method of
 images. Each changes the methodology section, its equations and its citations as well as the numbers,

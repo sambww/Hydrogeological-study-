@@ -22,6 +22,9 @@ First time on a machine: follow `docs/RUNBOOK.md` section A (setup and `hydrostu
 4a. **Site the well, before the design is fixed**: `hydrostudy siting projects/<slug>` answers where on the tract the
    well may go and what it can produce there, rather than whether one chosen spot works. Needs the tract polygon
    (`site.boundary_geojson` or a manifest `boundary`) and `district_wells.csv`. See `docs/RUNBOOK.md` section I.
+4b. **Or design the whole field**: `hydrostudy wellfield projects/<slug> --rate 700` decides how many
+   wells, where and at what rate each to meet a demand, and prints the trade-off against well count. Write
+   the chosen field into `proposed_wells` and carry on. See `docs/RUNBOOK.md` section K.
 5. **Run**: `hydrostudy run projects/<slug>`. Read the console summary: scenario results, checklist, placeholders, flags.
 6. **Reviewer pass**: build the reviewer's sheet with `hydrostudy review-sheet projects/<slug>` and have Claude
    publish it, or let the P.G./P.E. fill `review.yaml` directly (`opinions`, any `decisions` overrides, reviewer

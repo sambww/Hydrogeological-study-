@@ -2,11 +2,31 @@
 
 from __future__ import annotations
 
+import numpy as np
+
 from hydrostudy.districts.status import rule_status
 
 # Statuses that take a well out of the spacing count. A plugged or withdrawn well is not a well the
 # District protects, so it neither creates a conflict nor limits a rate.
 NON_COUNTING_STATUSES = ("plugged", "void", "void - application withdrawn")
+
+#: The compliance test below treats `distance <= required` as a CONFLICT, so a rate whose required radius
+#: exactly equals the distance does not comply. Anything computing "the largest rate this distance allows"
+#: must therefore stay strictly inside it, and by more than float noise: a designed location leaves as
+#: lat/lon and comes back through a projection, so the distance is not bit-identical on recompute. Half a
+#: foot is hydrologically nothing and survives that round trip. It is NOT a survey margin - that is the
+#: operator's `--spacing-safety-ft`, which is added on top.
+SPACING_ROUNDTRIP_FT = 0.5
+
+
+def max_rate_for_distance(distance_ft, ft_per_gpm: float, safety_ft: float = 0.0):
+    """The largest rate whose required spacing radius stays strictly inside `distance_ft`.
+
+    Shared by the siting search and the well-field designer so neither can produce a rate that the
+    compliance analysis then rejects. Works element-wise on arrays.
+    """
+    usable = np.asarray(distance_ft, dtype=float) - SPACING_ROUNDTRIP_FT - float(safety_ft)
+    return np.maximum(usable, 0.0) / ft_per_gpm
 
 
 def counts_against_spacing(n: dict) -> bool:

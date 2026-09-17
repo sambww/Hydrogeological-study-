@@ -34,6 +34,11 @@ You are helping a water-well contractor produce a DRAFT hydrogeological report t
    `hydrostudy siting projects/<slug>` (needs the tract polygon). Report the compliant acreage, the ranked locations
    with the rate each supports and what bound it, and the three cautions the command prints. Do not present the
    ranking as the decision: it knows distance, rate and drawdown, not access, power, easements or the septic field.
+4b. If the user gives a demand rather than a well design ("we need 700 gpm"), run
+   `hydrostudy wellfield projects/<slug> --rate <gpm> --available-drawdown-ft <ft>` and present the
+   trade-off table, then write the chosen field into `proposed_wells`. Always run it a second time with
+   `--spacing-safety-ft 100`: holding back a margin is often free, and a design sitting 20 ft off its
+   spacing limit is one corrected coordinate away from a violation.
 5. `hydrostudy run projects/<slug>`. Report back: drawdown results per scenario, spacing result, checklist counts,
    the list of `[P.G. TO PROVIDE]` placeholders and the flags. Open `build/figures/*.png` and sanity-check them.
 6. Iterate on inputs until only reviewer items remain. Hand the DOCX/PDF to the sealing professional with the
