@@ -67,6 +67,15 @@ Use the `/hydro-report` skill (`.claude/skills/hydro-report/SKILL.md`) to walk a
   computed to the last float does not comply, and a designed location round-trips through lat/lon before
   the pipeline re-measures it. `SPACING_ROUNDTRIP_FT` covers that; the operator's `--spacing-safety-ft`
   is a separate margin on top for the accuracy of the District's coordinates.
+- `hydrostudy uncertainty <project>` (`analysis/uncertainty.py`, `figures/uncertainty_plot.py`) propagates
+  declared parameter spreads by Monte Carlo into `build/uncertainty.json`; a third design tool that does
+  not touch the report. Rules: (1) a spread is NEVER defaulted - without an `uncertainty` block carrying a
+  `source` it refuses, because this analysis is about how much to trust the other numbers and a guessed
+  interval is worse than none; (2) draws and seed are inputs and are recorded, so an interval is
+  reproducible; (3) every quantile is reported with its standard error; (4) it reports where the
+  deterministic value falls as a percentile, so nobody mistakes the median for a correction to a sealed
+  number. `theis_drawdown` and `leaky_drawdown` accept ARRAYS for T and S so all draws evaluate in one
+  call - keep those guards array-aware (`np.any`). See `docs/RUNBOOK.md` section L.
 - Never overwrite a final report: bump `report.revision.number`.
 - Everything under `projects/<slug>` except `build/` is tracked on purpose: the intake is the record of what
   went into a sealed report. It therefore carries customer names, addresses, well coordinates and water-quality

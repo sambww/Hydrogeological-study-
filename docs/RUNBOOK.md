@@ -520,3 +520,88 @@ The designer does not touch `intake.yaml`. When you have a field you like, write
 `proposed_wells` (coordinates and `max_rate_gpm` from `build/wellfield.json`) and run the report as usual.
 `tests/test_wellfield.py` does exactly that and requires `spacing_analysis` to report no conflict and the
 pipeline's drawdown to match the designer's within 2%.
+
+## L. How sure is the answer? Parameter uncertainty
+
+Every number in a report from this tool rests on one transmissivity and one storativity. Black Oak's T
+came from a single 36-hour test. The GAM says something 20% different for the same cell. When a reviewer
+or a District hearing asks how sure the answer is, a single value cannot reply.
+
+```
+.venv/bin/hydrostudy uncertainty projects/<slug> --threshold-ft 25 --threshold-ft 50
+.venv/bin/hydrostudy uncertainty projects/<slug> --draws 50000 --seed 7 --quantiles 0.05,0.5,0.95
+```
+
+### You have to declare the spread
+
+The command **refuses to run** until the intake declares a distribution, with a source:
+
+```yaml
+aquifers:
+  - name: Evangeline
+    uncertainty:
+      t_ft2d:
+        kind: lognormal          # or uniform, or triangular
+        p10: 1023.0              # or: median + gsd
+        p90: 1231.2
+        source: "36-hour test at Well No. 1 (1,023) and the HAGM value at the same cell (1,231)"
+      s:
+        kind: lognormal
+        median: 3.36e-4
+        gsd: 1.6
+        source: "..."
+      # Optional. A single-well test cannot separate T from S: a fit trades one against the other, so
+      # the pair really is correlated when both spreads come from one such test.
+      log_correlation: 0.9
+      correlation_source: "both fitted from the same constant-rate test"
+```
+
+This is the one place in the package where a default would do the most damage. An uncertainty analysis is
+*about* how much to trust the other numbers, so a guessed coefficient of variation does not produce a
+rough answer, it produces a confidence interval nobody can source. The refusal names the shape to supply
+and, where the intake already carries two independent estimates of T (a site test and a GAM value that
+disagree), points out that they bracket a range your reviewer may want to adopt or widen.
+
+`T` and `S` are sampled independently unless you declare a correlation, and the output says which
+assumption it used either way.
+
+### Reading the output
+
+```
+  Receptor         Reported   pct   p10   p50   p90
+  Map ID 2             56.7   76%     45.5    52.5    59.9
+                     P(>50 ft) = 67%   P(>60 ft) = 10%
+```
+
+- **Reported** is what the report states today. **pct** is where that value falls in the distribution.
+- **P(>50 ft) = 67%** is the number that settles arguments. "There is a two-in-three chance drawdown at
+  that well exceeds 50 feet" is a sentence a District, a lawyer and a neighbour can all act on, and it is
+  what `--threshold-ft` exists for. Pass the figure that matters: a neighbour's pump setting, an available
+  drawdown, a number in a complaint.
+- **The percentile column is the one people misread.** In the example above the reported value sits at the
+  76th percentile, not the middle, because the intake's T is the low end of the declared spread. That is a
+  legitimate, conservative choice, and the output says so plainly - but it means **the median here is not
+  a correction to the report**. Do not "update" a sealed number to the median because this table exists.
+
+### Reproducibility
+
+The draw count and the seed are inputs and both are recorded in the output, because an interval nobody can
+re-derive is not evidence. The same project and seed give bit-identical numbers; `tests/test_uncertainty.py`
+asserts that. If you quote an interval in a submittal, quote the seed with it.
+
+Each reported quantile comes with its **standard error**, because a p90 from a finite sample is itself an
+estimate. At 10,000 draws that error is a tenth of a foot or so, which is finer than any input justifies.
+Do not quote an interval more precisely than the error allows.
+
+### What it does not cover
+
+This propagates the parameter spreads you declared, and nothing else. It says nothing about whether the
+Theis assumptions hold, whether the District's well database is complete, whether the confining unit
+leaks, or whether the pumping schedule is what was modelled. **A narrow interval here is not a statement
+that the answer is right** - only that it is insensitive to the two numbers you put a spread on. The
+output repeats that every run.
+
+It is also a decision-support tool, like `siting` and `wellfield`: it writes `build/uncertainty.json` and
+`build/figures/fig_uncertainty.png` and does **not** touch the report. Putting an uncertainty table into
+the sealed document is a choice for the sealing professional, and wiring it into the narrative is the next
+piece of work, not something this command does behind anyone's back.

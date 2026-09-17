@@ -22,10 +22,16 @@ def well_function(u):
     return exp1(np.asarray(u, dtype=float))
 
 
-def theis_drawdown(q_gpm: float, t_ft2d: float, s: float, r_ft, t_days: float):
-    """Drawdown (ft) at radius r after t days from one well pumping q_gpm."""
+def theis_drawdown(q_gpm: float, t_ft2d, s, r_ft, t_days):
+    """Drawdown (ft) at radius r after t days from one well pumping q_gpm.
+
+    Every argument but the rate may be an array, including T and S: that is what lets the uncertainty
+    analysis evaluate thousands of parameter draws in one call instead of looping over them.
+    """
     t_days = np.asarray(t_days, dtype=float)
-    if t_ft2d <= 0 or s <= 0 or np.any(t_days <= 0):
+    t_ft2d = np.asarray(t_ft2d, dtype=float)
+    s = np.asarray(s, dtype=float)
+    if np.any(t_ft2d <= 0) or np.any(s <= 0) or np.any(t_days <= 0):
         raise ValueError("T, S and t must be positive")
     r = np.asarray(r_ft, dtype=float)
     if np.any(r <= 0):

@@ -97,6 +97,61 @@ class Confinement(BaseModel):
     leakance_source: str | None = Field(default=None, description="citation for the leakance; required for a sealed report")
 
 
+class ParamDistribution(BaseModel):
+    """How uncertain one aquifer parameter is, and on whose authority.
+
+    `source` is required and has no default. A spread is a claim about how well the aquifer is known,
+    it changes every confidence interval the report would quote, and a plausible-looking guess is
+    exactly the kind of number that survives review and should not. Nothing here is ever defaulted.
+    """
+
+    kind: Literal["lognormal", "uniform", "triangular"]
+    source: str = Field(min_length=1, description="test, publication or model this spread comes from")
+    # lognormal: give either a p10/p90 pair or a median with a geometric standard deviation. T and S are
+    # positive and act multiplicatively on drawdown, which is why lognormal is the usual choice.
+    p10: float | None = Field(default=None, gt=0)
+    p90: float | None = Field(default=None, gt=0)
+    median: float | None = Field(default=None, gt=0)
+    gsd: float | None = Field(default=None, gt=1, description="geometric standard deviation")
+    # uniform and triangular
+    minimum: float | None = Field(default=None, gt=0)
+    maximum: float | None = Field(default=None, gt=0)
+    mode: float | None = Field(default=None, gt=0)
+
+    @model_validator(mode="after")
+    def _shape(self):
+        if self.kind == "lognormal":
+            pair = self.p10 is not None and self.p90 is not None
+            mg = self.median is not None and self.gsd is not None
+            if pair == mg:
+                raise ValueError("a lognormal needs either p10 and p90, or median and gsd, not both or neither")
+            if pair and self.p90 <= self.p10:
+                raise ValueError(f"p90 ({self.p90}) must exceed p10 ({self.p10})")
+        else:
+            if self.minimum is None or self.maximum is None:
+                raise ValueError(f"a {self.kind} distribution needs minimum and maximum")
+            if self.maximum <= self.minimum:
+                raise ValueError(f"maximum ({self.maximum}) must exceed minimum ({self.minimum})")
+            if self.kind == "triangular":
+                if self.mode is None:
+                    raise ValueError("a triangular distribution needs a mode")
+                if not self.minimum <= self.mode <= self.maximum:
+                    raise ValueError(f"mode ({self.mode}) must lie between minimum and maximum")
+        return self
+
+
+class AquiferUncertainty(BaseModel):
+    """Declared spreads for one aquifer's parameters, used only by `hydrostudy uncertainty`."""
+
+    t_ft2d: ParamDistribution | None = None
+    s: ParamDistribution | None = None
+    #: Correlation between log T and log S. A single-well pump test cannot separate the two, so a fit
+    #: trades one against the other and the pair is genuinely correlated; with an observation well it is
+    #: much weaker. Left null they are sampled independently, which the output states.
+    log_correlation: float | None = Field(default=None, ge=-1, le=1)
+    correlation_source: str | None = None
+
+
 class Aquifer(BaseModel):
     name: AquiferName
     top_ft_bgl: float | None = None
@@ -105,6 +160,7 @@ class Aquifer(BaseModel):
     confinement: Confinement = Confinement()
     params: AquiferParams
     site_test: SiteTest | None = None
+    uncertainty: AquiferUncertainty | None = None
     lithology_summary: str | None = None
 
     @property

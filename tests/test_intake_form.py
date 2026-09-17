@@ -26,7 +26,12 @@ FORM = Path(__file__).resolve().parents[1] / "web" / "intake_form.html"
 #:    professional's call, not the driller's at intake, so it is written by hand into
 #:    `analysis.boundaries` in intake.yaml with its `source`, rather than offered as a form field
 #:    someone could guess at. See docs/RUNBOOK.md section J.
-SKIP_BRANCHES = {"as_built", "boundaries"}
+#:  - `uncertainty`: how well T and S are known is a claim about the quality of an aquifer test or a
+#:    model, and it sets every confidence interval the uncertainty analysis reports. That is the sealing
+#:    professional's judgement, and a form field inviting a driller to pick a range is exactly how a
+#:    guessed spread would reach a report. Declared by hand in intake.yaml with its `source`; the
+#:    `hydrostudy uncertainty` command refuses to run without one. See docs/RUNBOOK.md section L.
+SKIP_BRANCHES = {"as_built", "boundaries", "uncertainty"}
 
 
 @pytest.fixture(scope="module")
