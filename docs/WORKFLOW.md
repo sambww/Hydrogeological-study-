@@ -19,6 +19,9 @@ First time on a machine: follow `docs/RUNBOOK.md` section A (setup and `hydrostu
      automatically), `county.geojson`; optional `springs.csv`; optional `gam_lookup.json` from `scripts/build_gam_lookup.py`
    - hydrography notes and the springs search result in the manifest
 4. **Validate**: `hydrostudy validate projects/<slug>`.
+4a. **Site the well, before the design is fixed**: `hydrostudy siting projects/<slug>` answers where on the tract the
+   well may go and what it can produce there, rather than whether one chosen spot works. Needs the tract polygon
+   (`site.boundary_geojson` or a manifest `boundary`) and `district_wells.csv`. See `docs/RUNBOOK.md` section I.
 5. **Run**: `hydrostudy run projects/<slug>`. Read the console summary: scenario results, checklist, placeholders, flags.
 6. **Reviewer pass**: build the reviewer's sheet with `hydrostudy review-sheet projects/<slug>` and have Claude
    publish it, or let the P.G./P.E. fill `review.yaml` directly (`opinions`, any `decisions` overrides, reviewer

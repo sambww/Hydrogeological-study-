@@ -271,3 +271,67 @@ To change what the form collects, edit the `field-spec` JSON block inside `web/i
 that block and `tests/test_intake_form.py` reads the same block, so a required field added to the schema without a
 control fails the test rather than failing silently on the next submission. Post-drilling `as_built` capture is
 deliberately excluded: it is LAS logs and test CSVs, which belong with the file drop.
+
+## I. Siting a well: where it can go and what it can make
+
+`hydrostudy siting` answers a different question from the rest of the tool. A report asks "does this location
+comply?" The siting search asks "where on this tract may the well go, and how much can it produce there?" Run it
+before the design is fixed, when the answer can still change where the rig sets up.
+
+```
+.venv/bin/hydrostudy siting projects/<slug>                       # the well's own rate, 100-ft grid
+.venv/bin/hydrostudy siting projects/<slug> --rate 700 --grid-ft 50
+.venv/bin/hydrostudy siting projects/<slug> --setback-ft 50 --available-drawdown-ft 250 --top 3
+```
+
+It needs two things beyond a valid intake:
+
+- **The tract**, as `site.boundary_geojson` in `intake.yaml` or a `boundary` entry in `data/manifest.yaml`. Without a
+  polygon there is no area to search and the command says so rather than guessing one.
+- **`data/district_wells.csv`**, because the spacing limit at any point is set by the nearest well in that file.
+
+### What it computes
+
+| Limit | How it inverts into a rate |
+|---|---|
+| Spacing | Closed-form. The required distance is `ft_per_gpm x gpm`, so the largest rate a point allows is the distance to the nearest counting well divided by the multiplier |
+| `--max-interference-ft` | Solved. A drawdown budget at a neighbouring well |
+| `--available-drawdown-ft` | Solved. The same budget applied at the proposed well's own radius: static level to pump intake is a rate limit like any other |
+
+The rate reported at a point is the smallest of whichever limits you asked for, and `binding_constraint` names which
+one bound it.
+
+The two drawdown limits are solved rather than divided out, and the reason matters if you ever check the arithmetic
+by hand. Theis drawdown is linear in Q at a fixed duration, so a budget looks like it should divide straight into a
+rate. But these scenarios run for the time the permitted annual volume takes to produce, `volume / (rate x 1440)`, so
+a lower rate pumps for longer and draws the level down further. Invert the budget at the duration the *target* rate
+implies and the rate that comes back is too high, by around 6% on the Black Oak example. So the rate and the duration
+are solved together, iterating down from the spacing limit until the rate stops moving. Every drawdown in the output
+is therefore reported twice: `_at_target_ft` at the target rate over the target's duration, and `_at_max_rate_ft` at
+the rate the location supports over the longer duration that rate implies, with `days_at_max_rate` alongside it. "Counting well" means the same test the compliance analysis applies
+(`analysis/spacing.py::counts_against_spacing`): not the applicant's own well, and not plugged or void. Both call the
+same function on purpose, so a location this search ranks is a location `hydrostudy run` reports as compliant.
+`tests/test_siting.py` proves that end to end by moving the well to the top-ranked point and re-running the project.
+
+### Reading the output
+
+`build/siting.json` and `build/figures/fig_siting_<well>.png`. Locations are ranked by the drawdown they put on
+somebody else's well, least first, and are forced at least `--min-separation-ft` apart so the list is options rather
+than one spot quoted five times. Each drawdown is quoted twice, at the target rate and at the rate the location can
+actually support, and the share coming from the existing system wells is called out separately: on a system with a
+well already pumping, most of the impact at a neighbour is usually already there before the new well starts.
+
+Three cautions the command prints and you should not skip:
+
+1. **Spacing headroom is only as good as the well database.** The search reports how far your export reaches. A rate
+   it allows at a point assumes no unrecorded well nearer than the nearest one in that file.
+2. **The envelope is only as firm as the multiplier.** When the district's spacing source is not authoritative
+   (section G), the whole envelope is reported as provisional: it is the area that complies with the multiplier
+   applied, not a statement of District compliance.
+3. **No location on the tract may support the rate.** That is an answer, not a failure. The command then reports the
+   best point, what it tops out at, and which limit bound it. Fewer wells at higher rates is not always available;
+   the alternative is usually more wells at lower rates, further apart, which is a design change and not a siting one.
+
+A well outside any spacing conflict can still be a bad well. The search knows about distance, rate and drawdown. It
+knows nothing about access, power, the septic field, the pipeline easement, the flood plain or where the customer will
+let you park a rig. Treat the ranking as the shortlist to walk, not the answer.

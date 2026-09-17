@@ -4,6 +4,19 @@ from __future__ import annotations
 
 from hydrostudy.districts.status import rule_status
 
+# Statuses that take a well out of the spacing count. A plugged or withdrawn well is not a well the
+# District protects, so it neither creates a conflict nor limits a rate.
+NON_COUNTING_STATUSES = ("plugged", "void", "void - application withdrawn")
+
+
+def counts_against_spacing(n: dict) -> bool:
+    """Whether a nearby well constrains spacing: not the applicant's own, and not plugged or void.
+
+    The siting search and the compliance analysis must apply the same test or the envelope one draws
+    will not be the envelope the other accepts, so both call this.
+    """
+    return not n["is_system_well"] and n["status"].lower() not in NON_COUNTING_STATUSES
+
 
 def spacing_analysis(intake, district, nearby: list[dict], status: dict | None = None) -> dict:
     status = status or rule_status(district)
@@ -13,7 +26,7 @@ def spacing_analysis(intake, district, nearby: list[dict], status: dict | None =
         mult = district.spacing_ft_per_gpm(w.aquifer)
         req = district.required_spacing_ft(w.aquifer, w.max_rate_gpm)
         inside = [n for n in nearby if req is not None and n["distance_by_well"].get(w.id, 1e12) <= req]
-        conflicts = [n for n in inside if not n["is_system_well"] and n["status"].lower() not in ("plugged", "void", "void - application withdrawn")]
+        conflicts = [n for n in inside if counts_against_spacing(n)]
         same_system = [n for n in inside if n["is_system_well"]]
         rec = {
             "well_id": w.id, "aquifer": w.aquifer, "max_rate_gpm": w.max_rate_gpm,

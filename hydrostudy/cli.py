@@ -1,4 +1,4 @@
-"""hydrostudy command line: new | import-intake | validate | run | render | checklist | doctor"""
+"""hydrostudy command line: new | import-intake | validate | run | render | siting | checklist | doctor"""
 
 from __future__ import annotations
 
@@ -86,6 +86,96 @@ def cmd_review_sheet(args):
     print(f"Wrote {target}. Publish it for the reviewer, then import their submission with: "
           f"hydrostudy import-review {args.project_dir} <submission>.json")
     return 0
+
+
+def cmd_siting(args):
+    from hydrostudy.analysis.siting import SitingNotPossible, SitingRequest, analyze_siting
+    from hydrostudy.pipeline import Project
+    p = Project(args.project_dir)
+    p.run_analysis()
+    req = SitingRequest(well_id=args.well, target_rate_gpm=args.rate, grid_spacing_ft=args.grid_ft,
+                        setback_ft=args.setback_ft, max_interference_ft=args.max_interference_ft,
+                        available_drawdown_ft=args.available_drawdown_ft, top_n=args.top,
+                        min_separation_ft=args.min_separation_ft)
+    try:
+        out = analyze_siting(p, req)
+    except SitingNotPossible as e:
+        print(f"cannot run a siting search: {e}", file=sys.stderr)
+        return 2
+    from hydrostudy.pipeline import dump_json
+    dump_json(out, p.build_dir / "siting.json")
+    if not args.no_figure:
+        from hydrostudy.figures import siting_map
+        fig_dir = p.build_dir / "figures"
+        fig_dir.mkdir(parents=True, exist_ok=True)
+        out["figure"] = siting_map.render(p, out, fig_dir / f"fig_siting_{out['well_id']}.png")
+        dump_json(out, p.build_dir / "siting.json")
+    _print_siting(out, p.build_dir / "siting.json")
+    return 0
+
+
+def _binding_detail(out, c):
+    """Why this location is limited, in the terms of the limit that actually bound it."""
+    which = c["binding_constraint"]
+    if which == "spacing":
+        return (f" ({c['nearest_counting_well']['distance_ft']:,.0f} ft to map ID "
+                f"{c['nearest_counting_well']['map_id']}, and {out['ft_per_gpm']:g} ft/gpm required)")
+    if which == "interference":
+        return (f" ({out['max_interference_ft']:,.2f}-ft cap reached at a neighbouring well over "
+                f"{c['days_at_max_rate']:,.1f} days)")
+    if which == "available drawdown":
+        return (f" ({c['self_drawdown_at_max_rate_ft']:,.1f} ft of the {out['available_drawdown_ft']:,.0f} ft "
+                f"available, over {c['days_at_max_rate']:,.1f} days)")
+    return ""
+
+
+def _print_siting(out, json_path):
+    from hydrostudy.geo.crs import format_dms
+    g = out["grid"]
+    print(f"\nSiting {out['well_label']} ({out['aquifer']}) at {out['target_rate_gpm']:,.0f} gpm")
+    print(f"  Spacing rule:  {out['ft_per_gpm']:g} ft/gpm -> {out['required_spacing_ft']:,.0f} ft required "
+          f"({out['rule_reference']}{'; PROVISIONAL' if out['provisional'] else ''})")
+    print(f"  Simulation:    {out['duration_label']} at a system rate of {out['system_rate_gpm']:,.0f} gpm, "
+          f"T={out['t_ft2d']:,.0f} ft2/day, S={out['s']:.2e}")
+    print(f"  Constraints:   {', '.join(out['constraints_applied'])}")
+    print(f"  Envelope:      {g['compliant_area_acres']:,.1f} of {g['searched_area_acres']:,.1f} searched acres "
+          f"({g['compliant']} of {g['candidates']} points at {g['spacing_ft']:,.0f}-ft spacing) on a "
+          f"{g['tract_area_acres']:,.1f}-acre tract")
+    if not out["feasible"]:
+        h = out["best_by_headroom"]
+        print(f"\n  NO location on the tract supports {out['target_rate_gpm']:,.0f} gpm. The best point tops out at "
+              f"{h['max_rate_gpm']:,.0f} gpm, limited by {h['binding_constraint']}"
+              f"{_binding_detail(out, h)}.")
+        print(f"     {format_dms(h['lat'], 'lat')}  {format_dms(h['lon'], 'lon')}, "
+              f"{h['move_from_intake_ft']:,.0f} ft from the intake location")
+    else:
+        print("\n  Ranked locations (least drawdown at someone else's well first):")
+        for c in out["best"]:
+            print(f"   {c['rank']}. {format_dms(c['lat'], 'lat')}  {format_dms(c['lon'], 'lon')}"
+                  f"   max {c['max_rate_gpm']:,.0f} gpm, limited by {c['binding_constraint']}"
+                  f"{_binding_detail(out, c)}")
+            nb = c["worst_neighbour"]
+            if nb:
+                print(f"      worst impact {nb['drawdown_at_target_ft']:.2f} ft at map ID {nb['map_id']} "
+                      f"({nb['owner'] or 'owner not recorded'}, {nb['distance_ft']:,.0f} ft), of which "
+                      f"{nb['drawdown_from_fixed_wells_ft']:.2f} ft is the existing system")
+            print(f"      {c['self_drawdown_at_target_ft']:.1f} ft drawdown at the well, "
+                  f"{c['boundary_distance_ft']:,.0f} ft to the property line, "
+                  f"{c['move_from_intake_ft']:,.0f} ft from the intake location")
+            if c["system_wells_inside_radius"]:
+                ids = ", ".join(str(w["map_id"]) for w in c["system_wells_inside_radius"])
+                print(f"      own system well(s) inside the spacing radius (flagged, not a conflict): map ID {ids}")
+        h = out["best_by_headroom"]
+        if h["max_rate_gpm"] > max(c["max_rate_gpm"] for c in out["best"]):
+            print(f"\n  Most rate headroom is elsewhere: {h['max_rate_gpm']:,.0f} gpm at "
+                  f"{format_dms(h['lat'], 'lat')}  {format_dms(h['lon'], 'lon')}, which puts "
+                  f"{h['worst_neighbour']['drawdown_at_target_ft']:.2f} ft on map ID "
+                  f"{h['worst_neighbour']['map_id']} at the target rate.")
+    for n in out["notes"]:
+        print(f"\n  Note: {n}")
+    print(f"\nWrote {json_path}")
+    if out.get("figure"):
+        print(f"Figure: {out['figure']['path']}")
 
 
 def cmd_validate(args):
@@ -193,6 +283,23 @@ def main(argv=None):
     s.add_argument("project_dir")
     s.add_argument("--out", default=None, help="write somewhere other than build/review_sheet.html")
     s.set_defaults(fn=cmd_review_sheet)
+    s = sub.add_parser("siting", help="find where on the tract the well may go and what it can produce there")
+    s.add_argument("project_dir")
+    s.add_argument("--well", default=None, help="which proposed well to site (default: the first)")
+    s.add_argument("--rate", type=float, default=None, help="target rate in gpm (default: the well's max_rate_gpm)")
+    s.add_argument("--grid-ft", type=float, default=100.0, help="candidate grid spacing in feet (default 100)")
+    s.add_argument("--setback-ft", type=float, default=None,
+                   help="keep candidates at least this far from the property line")
+    s.add_argument("--max-interference-ft", type=float, default=None,
+                   help="cap drawdown at any off-system well in the same aquifer, and report the rate that respects it")
+    s.add_argument("--available-drawdown-ft", type=float, default=None,
+                   help="drawdown available at the proposed well (static level to pump intake), as a rate limit")
+    s.add_argument("--top", type=int, default=5, help="how many locations to rank (default 5)")
+    s.add_argument("--min-separation-ft", type=float, default=None,
+                   help="how far apart ranked locations must be to count as different options "
+                        "(default: twice the grid spacing, at least 200 ft)")
+    s.add_argument("--no-figure", action="store_true")
+    s.set_defaults(fn=cmd_siting)
     s = sub.add_parser("validate", help="validate intake.yaml and review.yaml")
     s.add_argument("project_dir")
     s.set_defaults(fn=cmd_validate)

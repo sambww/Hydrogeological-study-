@@ -20,8 +20,14 @@ python -m venv .venv && .venv/bin/pip install -e .[dev]
 .venv/bin/hydrostudy import-intake projects/my_well submission.json
 # edit projects/my_well/intake.yaml, review.yaml and data/*.csv (see docs/WORKFLOW.md and docs/DATA_SOURCES.md)
 .venv/bin/hydrostudy validate projects/my_well
+.venv/bin/hydrostudy siting projects/my_well       # where the well can go and what it can make there
 .venv/bin/hydrostudy run projects/my_well
 ```
+
+`siting` is the design side of the same engine: give it the tract and a target rate and it maps every location that
+satisfies the District's spacing rule, ranks them by the drawdown they put on neighbouring wells, and reports the
+maximum rate each one supports and which limit bound it. It answers "where can this well go?" before the report has
+to answer "does this location comply?" (`docs/RUNBOOK.md` section I).
 
 See `docs/RUNBOOK.md` (set up your machine, validate the connectors and GAM script, run a real project), `docs/WORKFLOW.md` (step by step), `docs/DATA_SOURCES.md` (where each input comes from and the expected columns),
 and `docs/LSGCD_REQUIREMENTS_MATRIX.md` (guideline item -> report section -> code).
