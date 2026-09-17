@@ -156,9 +156,12 @@ def build_report(project, pdf: bool = True, strict_lint: bool = True) -> dict:
     doc.heading("6. Interference Analysis" if not feas else "6. Production and Drawdown Analysis", 1)
     doc.heading("6.1 Methodology", 2)
     doc.paragraphs(sections["method"])
-    doc.equation(eq["theis"], "Equation 1")
-    doc.equation(eq["well_function"], "Equation 2")
-    doc.equation(eq["u"], "Equation 3")
+    # The equations shown must be the ones that were solved, or the methodology section contradicts
+    # itself: Hantush-Jacob adds the leakage factor and replaces the exponential-integral well function.
+    keys = ("hantush", "hantush_well_function", "u", "leakage_factor") if ctx["sol"]["is_leaky"] \
+        else ("theis", "well_function", "u")
+    for i, key in enumerate(keys, start=1):
+        doc.equation(eq[key], f"Equation {i}")
     doc.paragraphs(sections["method_after"])
     sub = 2
     for g in ctx["groups"]:
@@ -222,6 +225,15 @@ def build_report(project, pdf: bool = True, strict_lint: bool = True) -> dict:
               [[f["key"], Path(f["path"]).name, f["source"], f["retrieved"], f["rows"] if f["rows"] is not None else "", (f["sha256"] or "")[:12]] for f in prov["files"]], font_pt=7.5)
     doc.heading("Appendix C. Verification of the analytical solution", 1)
     doc.para("The drawdown routine was checked against a District-accepted 2023 submittal that reported Theis distance-drawdown results for a 385-gpm Evangeline Aquifer well with a transmissivity of 1,023 ft2/day and a storativity of 3.36 x 10^-4.", size=9)
+    if ctx["sol"]["is_leaky"]:
+        # The benchmark below exercises the Theis routine. Saying so plainly is the difference between a
+        # verification appendix and a misleading one.
+        doc.para("The results in this report were computed with the Hantush-Jacob leaky-aquifer solution, "
+                 "which the benchmark below does not exercise. That solution was verified separately "
+                 "against its two analytical limits: it reproduces the Theis well function when the "
+                 "leakance is zero, and the Hantush-Jacob steady-state expression as pumping time "
+                 "becomes large. The benchmark is retained because both solutions share the same "
+                 "superposition, unit conversion and geometry code.", size=9)
     rows = []
     for r_ft, t_days, reported in BENCHMARK["cases"]:
         calc = float(theis_drawdown(BENCHMARK["q_gpm"], BENCHMARK["t_ft2d"], BENCHMARK["s"], r_ft, t_days))

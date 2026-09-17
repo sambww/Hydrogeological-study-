@@ -39,9 +39,10 @@ QUAD_NODES = 120
 # exp(-45) is below double-precision significance next to the peak, so the integrand is truncated
 # where either exponent passes this.
 EXP_CUTOFF = 45.0
-# Elements evaluated per block. Each block allocates a few (block x QUAD_NODES) arrays, so this caps
-# the working set at tens of megabytes however large the grid is.
-BLOCK = 50_000
+# Elements evaluated per block. Each block allocates a handful of (block x QUAD_NODES) float64 arrays,
+# so the peak is roughly block x QUAD_NODES x 8 bytes x (a few): at 10,000 x 120 that is about 10 MB per
+# array and well under 100 MB in total, however large the grid is.
+BLOCK = 10_000
 
 _X, _W = np.polynomial.legendre.leggauss(QUAD_NODES)
 _TINY = 1e-300

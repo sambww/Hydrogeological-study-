@@ -335,3 +335,91 @@ Three cautions the command prints and you should not skip:
 A well outside any spacing conflict can still be a bad well. The search knows about distance, rate and drawdown. It
 knows nothing about access, power, the septic field, the pipeline easement, the flood plain or where the customer will
 let you park a rig. Treat the ranking as the shortlist to walk, not the answer.
+
+## J. Beyond Theis: leaky aquifers and hydraulic boundaries
+
+Theis assumes a confining unit that passes no water and an aquifer that never ends. Both assumptions are
+conservative, both are sometimes wrong, and a reviewing geoscientist on a larger municipal system will
+ask about them. Two opt-in solutions are available. **Both default to off.** A project that says nothing
+gets Theis with no boundaries, which is what the District's guidelines contemplate and what every
+example in this repository still uses.
+
+### Leaky (semi-confined) aquifers
+
+Where the confining clay leaks, part of the withdrawal comes across it rather than out of storage, so
+drawdown flattens towards a steady cone instead of deepening with the logarithm of time. Theis
+overstates it.
+
+```yaml
+analysis:
+  solution: hantush          # default: theis
+aquifers:
+  - name: Evangeline
+    confinement:
+      status: semi-confined
+      confining_unit: Burkeville
+      thickness_ft: 100          # b'
+      k_prime_ftd: 0.01          # K'  -> leakance = K'/b' = 1e-4 per day
+      # or state the leakance directly:
+      # leakance_per_day: 1.0e-4
+      leakance_source: "Aquifer test at Well No. 1, 2023; K' fitted with Hantush-Jacob"
+```
+
+**The leakance is never defaulted, estimated or inferred.** It is a property of one specific clay at one
+specific site, every reported drawdown depends on it, and a plausible-looking guess is exactly the kind
+of number that survives review and should not. If `solution: hantush` is set without a leakance, the
+pipeline uses Theis, says so in the methodology section, and raises `LEAKANCE_MISSING`. If a leakance is
+given with no `leakance_source`, it raises `LEAKANCE_UNCITED` and the report states plainly that the
+source was not given.
+
+Choosing the leaky solution changes the methodology section, its equations, its assumption list and its
+citations, not just the numbers. It is also the *less* conservative choice at late time, and the report
+says so: the Hantush-Jacob assumptions require that the bed feeding the confining unit does not itself
+draw down and that the clay releases none of its own water. Where either fails, real drawdown exceeds
+what this reports.
+
+### Hydraulic boundaries
+
+A barrier (the sand pinches out, a fault throws it out of contact) deepens the cone against it. A
+recharge boundary (a fully penetrating river or lake in good hydraulic contact) holds the head fixed and
+shallows it. Each is represented by an image well reflected across the line, which is the exact
+analytical solution for one straight boundary.
+
+```yaml
+analysis:
+  boundaries:
+    - kind: barrier            # or: recharge
+      name: Conroe fault
+      aquifer: Evangeline      # omit to apply it to every aquifer, which is rarely what you mean
+      lat1: 30.1735            # two points anywhere on the line
+      lon1: -95.5725
+      lat2: 30.1760
+      lon2: -95.5700
+      source: "Interpreted from the 2023 seismic section; confirm with District staff"
+```
+
+Four things to know before using one:
+
+1. **It is an interpretation, so it carries a `source`.** It changes every reported drawdown, and a
+   reviewer has to be able to challenge it. The narrative names the source.
+2. **A receptor beyond a boundary gets no drawdown estimate at all.** The image solution represents the
+   aquifer on the pumping side only. Past a recharge boundary the arithmetic returns negative drawdown;
+   past a barrier it returns drawdown that *grows* with distance. Those wells are reported as "beyond
+   boundary" with a footnote, not as a number. Cone-of-depression distances are cut off at the boundary
+   for the same reason, and the count of truncated directions is recorded.
+3. **One boundary is exact; two or more are truncated.** Images reflect between multiple boundaries
+   indefinitely. The series stops at `analysis.image_max_order` (default 6) and the report says it was
+   truncated. The residual grows as boundaries get closer and more nearly parallel.
+4. **`hydrostudy siting` refuses to run.** Each candidate location would carry its own image wells, and
+   points beyond a boundary have no drawdown, so an envelope computed without them would disagree with
+   the report. Comment the boundaries out to explore siting, then restore them.
+
+### What to check in the output
+
+- `build/analysis.json` -> `solutions` names the solution per aquifer, its leakance and leakage factor,
+  and whether it `fell_back` to Theis.
+- The interference table gains a column for the boundary's contribution, so the printed row still adds
+  to the printed total. Image wells appear in `image_wells` and in no table of wells.
+- Flags to read before sealing: `LEAKANCE_MISSING`, `LEAKANCE_UNCITED`, `LEAKY_BUT_CONFINED` (a leaky
+  solution on an aquifer the intake calls confined), `LEAKAGE_REACH` (leakage too distant to matter, or
+  so close the result is insensitive to duration) and `HYDRAULIC_BOUNDARIES` (the truncation note).

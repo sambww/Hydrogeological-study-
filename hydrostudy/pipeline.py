@@ -12,7 +12,9 @@ from hydrostudy.analysis.aquifer_params import resolve_params
 from hydrostudy.analysis.checks import collect_flags
 from hydrostudy.analysis.interference import pumping_level_checks, system_interference_matrix
 from hydrostudy.analysis.scenarios import build_scenarios, run_scenario
+from hydrostudy.analysis.solution import leakage_reach_note, resolve_solution
 from hydrostudy.analysis.spacing import spacing_analysis
+from hydrostudy.analysis.theis import PumpingWell
 from hydrostudy.data.hydrography import build_hydrography
 from hydrostudy.data.manifest import load_manifest
 from hydrostudy.data.water_quality import build_water_quality
@@ -64,6 +66,16 @@ class Project:
             self.boundary_geom = load_boundary(bpath, self.crs)
             self.boundary_source = str(bpath)
         self.artifacts: dict = {}
+
+    def build_boundaries(self) -> list:
+        """Hydraulic boundaries from the intake, projected into the project's local feet."""
+        from hydrostudy.analysis.boundaries import LineBoundary
+        out = []
+        for b in self.intake.analysis.boundaries:
+            x1, y1 = self.crs.to_local(b.lon1, b.lat1)
+            x2, y2 = self.crs.to_local(b.lon2, b.lat2)
+            out.append(LineBoundary(b.kind, x1, y1, x2, y2, b.name, b.source, b.aquifer))
+        return out
 
     # ---------------- stages ----------------
     def run_analysis(self) -> dict:
@@ -146,11 +158,34 @@ class Project:
         hydro = build_hydrography(self.manifest, self.crs, site_xy, float(district.get("surface_water_radius_mi", 1.0)))
         hydro_geoms = hydro.pop("_geoms")
 
+        # One solution per aquifer and one set of boundaries for the whole project, resolved here so
+        # the tables, the maps, the curves and the narrative cannot describe different calculations.
+        solutions, solution_flags = {}, []
+        for aq, prm in aquifer_params.items():
+            solutions[aq], fl = resolve_solution(intake, aq, prm["t_ft2d"])
+            solution_flags.extend(fl)
+            note = leakage_reach_note(solutions[aq], search_radius_ft)
+            if note:
+                # 'review' rather than 'info': the CLI summary and the reviewer sheet both filter
+                # info out, and "confirm this" that nobody sees is not a caveat, it is decoration.
+                solution_flags.append({"level": "review", "code": "LEAKAGE_REACH", "text": f"{aq}: {note}"})
+        boundaries = self.build_boundaries()
+        if boundaries:
+            from hydrostudy.analysis.boundaries import truncation_note, with_images
+            probe = [PumpingWell(w.id, *intake._local_xy[w.id], w.max_rate_gpm, w.effective_r_w_ft(), w.aquifer)
+                     for w in intake.proposed_wells]
+            _, probe_images = with_images(probe, boundaries, intake.analysis.image_max_order)
+            solution_flags.append({
+                "level": "review", "code": "HYDRAULIC_BOUNDARIES",
+                "text": truncation_note(boundaries, probe_images)})
+
         scen_defs = build_scenarios(intake, review, aquifer_params)
-        scenarios = [run_scenario(sc, intake, review, aquifer_params, nearby) for sc in scen_defs]
+        scenarios = [run_scenario(sc, intake, review, aquifer_params, nearby, boundaries, solutions)
+                     for sc in scen_defs]
         interference = {sc["key"]: system_interference_matrix(sc) for sc in scenarios if sc["group"] == "system"}
         pumping = pumping_level_checks(intake, scenarios)
         flags = collect_flags(intake, review, aquifer_params, spacing, scenarios, pumping, hydro, wq, district["id"])
+        flags = solution_flags + flags
         if as_built:
             flags = as_built["flags"] + flags
         flags = boundary_flags + flags
@@ -161,6 +196,10 @@ class Project:
             "search_radius_ft": search_radius_ft, "spacing_radius_ft": spacing_radius_ft,
             "half_mile_ft": half_mile, "map_radius_ft": float(district.get("wells_map_radius_mi", 1.0)) * FT_PER_MILE,
             "boundary_source": self.boundary_source, "boundary_distances": boundary_distances,
+            "hydraulic_boundaries": [{"kind": b.kind, "name": b.label, "source": b.source,
+                                      "aquifer": b.aquifer,
+                                      "x1": b.x1, "y1": b.y1, "x2": b.x2, "y2": b.y2}
+                                     for b in boundaries],
         }
         provenance = {
             "hydrostudy_version": __version__, "generated_at": time.strftime("%Y-%m-%d %H:%M:%S"),
@@ -179,6 +218,7 @@ class Project:
         }
         analysis = {
             "aquifer_params": aquifer_params, "scenarios": scenarios, "system_interference": interference,
+            "solutions": {aq: sol.to_json() for aq, sol in solutions.items()},
             "pumping_levels": pumping, "spacing": spacing,
             "wells": [{"id": w.id, "kind": "proposed" if w in intake.proposed_wells else "existing",
                        "aquifer": w.aquifer, "q_gpm": w.max_rate_gpm, "r_w_ft": w.effective_r_w_ft(),

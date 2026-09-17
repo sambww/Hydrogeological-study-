@@ -29,6 +29,11 @@ satisfies the District's spacing rule, ranks them by the drawdown they put on ne
 maximum rate each one supports and which limit bound it. It answers "where can this well go?" before the report has
 to answer "does this location comply?" (`docs/RUNBOOK.md` section I).
 
+Beyond Theis, two solutions are available and both default to off: the Hantush-Jacob leaky-aquifer
+solution for a confining unit that passes water, and barrier or recharge boundaries by the method of
+images. Each changes the methodology section, its equations and its citations as well as the numbers,
+and neither will run on an uncited leakance. `docs/RUNBOOK.md` section J.
+
 See `docs/RUNBOOK.md` (set up your machine, validate the connectors and GAM script, run a real project), `docs/WORKFLOW.md` (step by step), `docs/DATA_SOURCES.md` (where each input comes from and the expected columns),
 and `docs/LSGCD_REQUIREMENTS_MATRIX.md` (guideline item -> report section -> code).
 

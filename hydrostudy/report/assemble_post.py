@@ -98,9 +98,12 @@ def build_post_report(project, pdf: bool = True, strict_lint: bool = True) -> di
         doc.heading(f"{sec}.1 Methodology", 2)
         doc.paragraphs(sections["method"])
         eq = render_equations(project.build_dir / "figures")
-        doc.equation(eq["theis"], "Equation 1")
-        doc.equation(eq["well_function"], "Equation 2")
-        doc.equation(eq["u"], "Equation 3")
+        # Same rule as the pre-drilling report: show the equations that were solved. The re-run uses
+        # whatever solution the intake selected, so this cannot be hard-coded to Theis.
+        keys = (("hantush", "hantush_well_function", "u", "leakage_factor") if ctx["sol"]["is_leaky"]
+                else ("theis", "well_function", "u"))
+        for i, key in enumerate(keys, start=1):
+            doc.equation(eq[key], f"Equation {i}")
         doc.paragraphs(sections["method_after"])
         sub = 2
         for g in ctx["groups"]:

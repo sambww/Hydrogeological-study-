@@ -6,6 +6,8 @@ import numpy as np
 from matplotlib.lines import Line2D
 from matplotlib.patches import Patch
 
+from hydrostudy.analysis.boundaries import LineBoundary
+from hydrostudy.analysis.solution import solution_from
 from hydrostudy.analysis.theis import PumpingWell, drawdown_grid
 from hydrostudy.figures.style import (
     COLORS,
@@ -20,6 +22,10 @@ from hydrostudy.figures.style import (
     set_extent,
 )
 
+# A barrier passes no water and a recharge boundary holds the head: opposite effects, so they must not
+# look alike on a map someone reads quickly.
+BOUNDARY_COLORS = {"barrier": "#8c2d04", "recharge": "#0b6fa4"}
+
 
 def render(project, scenario: dict, aquifer: str, path):
     a = project.artifacts
@@ -27,6 +33,11 @@ def render(project, scenario: dict, aquifer: str, path):
     intake = project.intake
     res = scenario["results_by_aquifer"][aquifer]
     wells = [PumpingWell(w["id"], w["x_ft"], w["y_ft"], w["q_gpm"], w["r_w_ft"], aquifer) for w in res["wells_xy"]]
+    # The contoured field has to be the one the tables were computed from: the same solution, and the
+    # image wells that any hydraulic boundary put into the superposition.
+    field = wells + [PumpingWell(i["id"], i["x_ft"], i["y_ft"], i["q_gpm"], i["r_w_ft"], aquifer)
+                     for i in res.get("image_wells", [])]
+    fn = solution_from(res).drawdown
     T, S, t = res["t_ft2d"], res["s"], scenario["duration_days"]
     interval = intake.analysis.contour_interval_ft
     # extent: cover the half-mile circles, all system wells and the largest reported cone edge (capped)
@@ -39,7 +50,16 @@ def render(project, scenario: dict, aquifer: str, path):
     if edge_5:
         half = max(half, min(edge_5 * 1.15, 4 * 5280))
     n = int(intake.analysis.grid_points)
-    X, Y, Z = drawdown_grid(wells, T, S, t, half, n=n, center=(cx, cy))
+    X, Y, Z = drawdown_grid(field, T, S, t, half, n=n, center=(cx, cy), fn=fn)
+    # Everything else refuses to report drawdown beyond a boundary; the contoured field must not imply
+    # one either. Masking leaves the far side blank rather than contouring meaningless arithmetic.
+    for b in a["geo"].get("hydraulic_boundaries", []):
+        if b.get("aquifer") not in (None, "", aquifer):
+            continue
+        line = LineBoundary(b["kind"], b["x1"], b["y1"], b["x2"], b["y2"], b["name"], b.get("source"))
+        here = line.signed_offset_ft(X, Y)
+        inside = line.signed_offset_ft(cx, cy)
+        Z = np.where((here > 0) == (inside > 0), Z, np.nan)
     fig, ax = new_map()
     set_extent(ax, cx, cy, half)
     for w in intake.proposed_wells:
@@ -47,6 +67,30 @@ def render(project, scenario: dict, aquifer: str, path):
         add_circle(ax, x, y, geo["half_mile_ft"], fc=COLORS["half_mile"], ec="none", alpha=0.45, zorder=1)
     draw_hydrography(ax, project)
     draw_boundary(ax, project)
+    # A hydraulic boundary reshapes these contours; contours collapsing to zero along an invisible
+    # line is the kind of figure that gets a report sent back.
+    for b in a["geo"].get("hydraulic_boundaries", []):
+        if b.get("aquifer") not in (None, "", aquifer):
+            continue
+        style = dict(color=BOUNDARY_COLORS[b["kind"]], lw=2.0, zorder=9,
+                     ls="-" if b["kind"] == "recharge" else (0, (6, 3)))
+        # Drawn well past the frame: the line is infinite in the solution, so it must not appear to stop.
+        ux, uy = b["x2"] - b["x1"], b["y2"] - b["y1"]
+        norm = (ux**2 + uy**2) ** 0.5
+        ux, uy = ux / norm, uy / norm
+        reach = half * 3
+        mx, my = (b["x1"] + b["x2"]) / 2, (b["y1"] + b["y2"]) / 2
+        ax.plot([mx - ux * reach, mx + ux * reach], [my - uy * reach, my + uy * reach], **style)
+        # Label low on the frame, following the line. The middle holds the well callouts and the
+        # deepest contours, and the top-right corner holds the legend.
+        along = ((cy - half * 0.62) - my) / uy if abs(uy) > 1e-9 else 0.0
+        lx, ly = mx + ux * along, my + uy * along
+        if abs(lx - cx) > half:            # a near-horizontal boundary: label it at the frame edge
+            along = ((cx - half * 0.45) - mx) / ux if abs(ux) > 1e-9 else 0.0
+            lx, ly = mx + ux * along, my + uy * along
+        ax.annotate(f"{b['name']} ({b['kind']})", (lx, ly), fontsize=6.5,
+                    color=BOUNDARY_COLORS[b["kind"]], ha="center", va="bottom", zorder=10,
+                    bbox=dict(boxstyle="round,pad=0.15", fc="white", ec="none", alpha=0.9))
     zmax = float(np.nanmax(Z))
     levels = np.arange(interval, min(zmax, 400) + interval, interval)
     if len(levels) == 0:
