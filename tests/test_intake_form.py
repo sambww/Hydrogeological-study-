@@ -18,9 +18,15 @@ from hydrostudy.schema.intake import Intake
 
 FORM = Path(__file__).resolve().parents[1] / "web" / "intake_form.html"
 
-#: Deliberately not collected by the form. Post-drilling capture is file-based (LAS logs, test CSVs), so it belongs
-#: with the file drop rather than a questionnaire.
-SKIP_BRANCHES = {"as_built"}
+#: Branches the intake sheet deliberately does not collect, each for a stated reason. This set is the
+#: only sanctioned way past the coverage test below, so adding to it is a product decision, not a fix.
+#:  - `as_built`: LAS logs and aquifer-test CSVs, which belong with the file drop, not a form.
+#:  - `boundaries`: whether a fault is a no-flow barrier, or a creek is in hydraulic contact with the
+#:    aquifer, is a geological interpretation that changes every reported drawdown. It is the sealing
+#:    professional's call, not the driller's at intake, so it is written by hand into
+#:    `analysis.boundaries` in intake.yaml with its `source`, rather than offered as a form field
+#:    someone could guess at. See docs/RUNBOOK.md section J.
+SKIP_BRANCHES = {"as_built", "boundaries"}
 
 
 @pytest.fixture(scope="module")

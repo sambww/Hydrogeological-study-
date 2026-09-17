@@ -4,18 +4,31 @@ from __future__ import annotations
 
 
 def system_interference_matrix(scenario: dict) -> dict:
-    """For system scenarios: drawdown (ft) at each system well caused by each other system well."""
+    """For system scenarios: drawdown (ft) at each system well caused by each other system well.
+
+    A row has to add up. Where a hydraulic boundary is in effect, part of each well's drawdown comes
+    from image wells, which are not system wells and have no column of their own; that share is carried
+    in `_boundary` so the printed total is the sum of the printed cells rather than exceeding them by an
+    amount the table cannot explain.
+    """
     matrix = {}
     for aq, res in scenario["results_by_aquifer"].items():
         ids = [p["id"] for p in res["pumped_wells"]]
         rows = {}
+        any_boundary = False
         for p in res["pumped_wells"]:
             row = {}
             for other in ids:
                 row[other] = p["self_ft"] if other == p["id"] else p["contributions_ft"].get(other, 0.0)
+            boundary = float(p.get("boundary_effect_ft") or 0.0)
+            if boundary:
+                any_boundary = True
+            row["_boundary"] = boundary
             row["_total"] = p["total_ft"]
             rows[p["id"]] = row
-        matrix[aq] = {"well_ids": ids, "rows": rows, "distances": {p["id"]: p["distances_ft"] for p in res["pumped_wells"]}}
+        matrix[aq] = {"well_ids": ids, "rows": rows, "has_boundary_effect": any_boundary,
+                      "boundary_labels": res.get("boundary_labels", []),
+                      "distances": {p["id"]: p["distances_ft"] for p in res["pumped_wells"]}}
     return matrix
 
 

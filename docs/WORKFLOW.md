@@ -31,6 +31,12 @@ First time on a machine: follow `docs/RUNBOOK.md` section A (setup and `hydrostu
 7. **Submit** the sealed DOCX/PDF with the District application. After drilling, prepare the post-drilling
    submittal (Guidelines Section III) - a Phase 2 mode.
 
+Solutions: the default is Theis with no boundaries, which is what the District's guidelines contemplate.
+`analysis.solution: hantush` plus a cited leakance on the aquifer's `confinement` block runs the
+Hantush-Jacob leaky solution; `analysis.boundaries` adds barrier or recharge boundaries by the method of
+images. Both are opt-in, both change the methodology narrative to match, and both are documented in
+`docs/RUNBOOK.md` section J.
+
 Scenario logic (LSGCD): proposed well alone and all same-aquifer system wells, each at 24 hours and at
 `annual_volume / (rate x 1440)` days ("maximum production"). Feasibility mode: fixed durations (e.g. 10 and 20 years)
 with optional single-well sub-cases.

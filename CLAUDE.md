@@ -32,6 +32,19 @@ Use the `/hydro-report` skill (`.claude/skills/hydro-report/SKILL.md`) to walk a
   the District's rule and put the basis in the provenance note; the third makes it state the distance applied and ask
   the reviewer to confirm. Every tier expires after `recheck_after_days`, on a per-scope date
   (`districts/status.py`). Re-verify before each submittal; see `docs/RUNBOOK.md` section G.
+- Alternative solutions are opt-in and resolved in ONE place: `analysis/solution.py::resolve_solution`,
+  once per aquifer, returning an object whose `drawdown` has the same signature as `theis_drawdown` so it
+  can be injected (`superposed_drawdown`, `drawdown_at_well`, `radius_at_drawdown`, `drawdown_grid` all
+  take `fn=`). Defaults: `analysis.solution: theis`, no boundaries - so every existing number is
+  unchanged. `analysis/leaky.py` is Hantush-Jacob; `analysis/boundaries.py` is barrier/recharge image
+  wells; `analysis/schedule.py` is variable rates (tested, not yet on the report path).
+  Rules that must not be broken: (1) a leakance is NEVER defaulted or estimated - without a cited one the
+  pipeline falls back to Theis and flags it; (2) whatever ran must be what the report says ran, so the
+  methodology narrative, its equations and the figures are all conditional on the resolved solution;
+  (3) a receptor beyond a boundary gets NO drawdown, because past a recharge boundary the superposition
+  is negative and past a barrier it grows with distance; (4) image wells never appear in a table of
+  wells - their share of the drawdown is reported as `boundary_effect_ft` so interference rows still add
+  up. See `docs/RUNBOOK.md` section J.
 - `hydrostudy siting <project>` (`analysis/siting.py`, `figures/siting_map.py`) answers where on the tract the well may
   go and what it can produce there, and writes `build/siting.json`. It is a design tool, not a report section: it does
   not touch the report. Its spacing test is `analysis/spacing.py::counts_against_spacing`, the same predicate the

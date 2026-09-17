@@ -87,6 +87,14 @@ class Confinement(BaseModel):
     confining_unit: str | None = None
     thickness_ft: float | None = None
     source: str | None = None
+    # Leakage through the confining unit, needed only when analysis.solution is 'hantush'. Give either
+    # the leakance directly or the confining unit's vertical conductivity to go with thickness_ft.
+    # Nothing here is ever defaulted or estimated: a leakance is a property of one specific clay.
+    k_prime_ftd: float | None = Field(default=None, gt=0,
+                                      description="vertical hydraulic conductivity of the confining unit (ft/day)")
+    leakance_per_day: float | None = Field(default=None, gt=0,
+                                           description="K'/b' (1/day); takes precedence over k_prime_ftd")
+    leakance_source: str | None = Field(default=None, description="citation for the leakance; required for a sealed report")
 
 
 class Aquifer(BaseModel):
@@ -252,7 +260,49 @@ class ScenarioConfig(BaseModel):
     include_single_well_subcases: bool = False
 
 
+class BoundarySpec(BaseModel):
+    """A straight hydraulic boundary, given by two points on it.
+
+    `barrier` is a no-flow edge (the sand pinches out, or a fault throws it out of contact) and deepens
+    drawdown; `recharge` is a fully penetrating surface-water body in good hydraulic contact that holds
+    the head fixed and shallows it. Either is a geological interpretation, so `source` carries who made
+    it: it changes the reported drawdown and a reviewer has to be able to challenge it.
+    """
+
+    kind: Literal["barrier", "recharge"]
+    name: str
+    #: Which aquifer this boundary bounds. A fault that throws the Evangeline out of contact says
+    #: nothing about the Jasper, so leaving this null applies the boundary to every aquifer and should
+    #: be a deliberate choice rather than an oversight.
+    aquifer: AquiferName | None = None
+    lat1: float
+    lon1: float
+    lat2: float
+    lon2: float
+    source: str | None = None
+
+    @field_validator("lat1", "lat2", mode="before")
+    @classmethod
+    def _lat(cls, v):
+        return parse_coordinate(v, "lat")
+
+    @field_validator("lon1", "lon2", mode="before")
+    @classmethod
+    def _lon(cls, v):
+        lon = parse_coordinate(v, "lon")
+        if lon > 0:
+            raise ValueError("Texas longitudes are west and must be negative")
+        return lon
+
+
 class AnalysisConfig(BaseModel):
+    # 'theis' assumes no leakage and no boundaries, which is the District's default expectation and the
+    # conservative case. 'hantush' requires a cited leakance on the aquifer's confinement block; without
+    # one the pipeline falls back to Theis and flags it rather than inventing a value.
+    solution: Literal["theis", "hantush"] = "theis"
+    boundaries: list[BoundarySpec] = []
+    image_max_order: int = Field(default=6, ge=1, le=12,
+                                 description="image-well reflection depth; only matters with 2+ boundaries")
     cone_edge_thresholds_ft: list[float] = [1.0, 5.0]
     contour_interval_ft: float = 5.0
     map_radius_mi: float = 1.0

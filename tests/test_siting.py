@@ -268,3 +268,44 @@ def test_an_envelope_built_on_a_multiplier_nobody_read_says_so(tmp_path):
     d = p.build_dir / "figures"
     d.mkdir(parents=True, exist_ok=True)
     assert "provisional" in siting_map.render(p, out, d / "fig_siting_prov.png")["caption"]
+
+
+def test_siting_uses_the_projects_own_solution(tmp_path):
+    """A Theis envelope under a Hantush-Jacob report is an envelope the report does not accept."""
+    import yaml
+
+    from hydrostudy.analysis.solution import HANTUSH_CITATION
+    p = _project(tmp_path)
+    intake = yaml.safe_load((p.dir / "intake.yaml").read_text())
+    intake["analysis"]["solution"] = "hantush"
+    intake["aquifers"][0]["confinement"] = {"status": "semi-confined", "thickness_ft": 100.0,
+                                            "leakance_per_day": 1e-4, "leakance_source": "test fixture"}
+    (p.dir / "intake.yaml").write_text(yaml.safe_dump(intake, sort_keys=False))
+    q = Project(p.dir)
+    q.run_analysis()
+
+    theis = analyze_siting(p, SitingRequest(grid_spacing_ft=200.0, available_drawdown_ft=160.0))
+    leaky = analyze_siting(q, SitingRequest(grid_spacing_ft=200.0, available_drawdown_ft=160.0))
+    assert leaky["solution"]["kind"] == "hantush"
+    assert any(HANTUSH_CITATION in n for n in leaky["notes"])
+    # Leakage means less drawdown, so a drawdown-limited location supports a higher rate.
+    assert leaky["best_by_headroom"]["max_rate_gpm"] > theis["best_by_headroom"]["max_rate_gpm"]
+
+
+def test_siting_refuses_rather_than_ignore_a_hydraulic_boundary(tmp_path):
+    """Half-modelling a boundary would put a wrong envelope in front of a driller. Refuse instead."""
+    import yaml
+
+    from hydrostudy.geo.crs import LocalCRS
+    p = _project(tmp_path)
+    crs = LocalCRS(SITE_LAT, SITE_LON)
+    lon1, lat1 = crs.to_wgs84(1500.0, -8000.0)
+    lon2, lat2 = crs.to_wgs84(1500.0, 8000.0)
+    intake = yaml.safe_load((p.dir / "intake.yaml").read_text())
+    intake["analysis"]["boundaries"] = [{"kind": "barrier", "name": "Conroe fault",
+                                         "lat1": lat1, "lon1": lon1, "lat2": lat2, "lon2": lon2}]
+    (p.dir / "intake.yaml").write_text(yaml.safe_dump(intake, sort_keys=False))
+    q = Project(p.dir)
+    q.run_analysis()
+    with pytest.raises(SitingNotPossible, match="does not yet model"):
+        analyze_siting(q, SitingRequest(grid_spacing_ft=200.0))

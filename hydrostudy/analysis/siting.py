@@ -1,6 +1,7 @@
 """Well siting: where on a tract a well may legally go, and how much it can produce there.
 
-Geometry and Theis superposition only.
+Geometry and superposition only, using whichever single-well solution the project itself uses
+(`analysis/solution.py`), so the envelope this draws is one the report agrees with.
 
 The spacing limit is closed-form: the District's requirement is a distance proportional to the pumping
 rate (`required_spacing_ft = ft_per_gpm * gpm`), so the largest rate spacing permits at a point is the
@@ -32,8 +33,9 @@ import numpy as np
 from shapely import contains_xy, distance, points
 
 from hydrostudy.analysis.scenarios import max_production_days
+from hydrostudy.analysis.solution import resolve_solution
 from hydrostudy.analysis.spacing import counts_against_spacing
-from hydrostudy.analysis.theis import PumpingWell, theis_drawdown
+from hydrostudy.analysis.theis import PumpingWell
 from hydrostudy.districts.status import rule_status
 from hydrostudy.units import DAYS_PER_YEAR, MIN_PER_DAY
 
@@ -189,6 +191,20 @@ def analyze_siting(project, request: SitingRequest | None = None) -> dict:
             f"the {district['id']} rules file carries no spacing multiplier for the {well.aquifer}, so "
             "no envelope can be computed; add one to hydrostudy/districts/ with its source")
 
+    # Whatever solution the project uses, the search must use it too: an envelope drawn with Theis
+    # under a report that runs Hantush-Jacob is an envelope the report does not accept.
+    sol, sol_flags = resolve_solution(intake, well.aquifer, project.artifacts["analysis"]["aquifer_params"][well.aquifer]["t_ft2d"])
+    dd = sol.drawdown
+    # Hydraulic boundaries are a different matter. Each candidate would carry its own image wells, whose
+    # positions move with it, and beyond a boundary the superposition is meaningless - so rather than
+    # search a field it models only approximately, this refuses and says so.
+    if project.build_boundaries():
+        raise SitingNotPossible(
+            "this project defines hydraulic boundaries, which the siting search does not yet model. "
+            "Every candidate location carries its own image wells and points beyond a boundary have no "
+            "drawdown at all, so an envelope computed without them would disagree with the report. "
+            "Comment out analysis.boundaries to explore siting, then restore it for the report.")
+
     status = rule_status(district)
     params = project.artifacts["analysis"]["aquifer_params"][well.aquifer]
     t_ft2d, s = params["t_ft2d"], params["s"]
@@ -241,7 +257,7 @@ def analyze_siting(project, request: SitingRequest | None = None) -> dict:
         """Drawdown the wells that stay put impose at these points, over these durations."""
         if not fixed_same_aq or tx.size == 0:
             return np.zeros(np.broadcast_shapes(np.shape(tx), np.shape(t_days)))
-        return sum(theis_drawdown(w.q_gpm, t_ft2d, s, np.maximum(np.hypot(tx - w.x_ft, ty - w.y_ft), w.r_w_ft),
+        return sum(dd(w.q_gpm, t_ft2d, s, np.maximum(np.hypot(tx - w.x_ft, ty - w.y_ft), w.r_w_ft),
                                   t_days)
                    for w in fixed_same_aq)
 
@@ -250,14 +266,14 @@ def analyze_siting(project, request: SitingRequest | None = None) -> dict:
         t = _production_days(rate_gpm, fixed_total, intake.permit.annual_volume_gal)
         out = {"spacing": rate_spacing}
         if neighbours and req.max_interference_ft is not None:
-            unit = theis_drawdown(1.0, t_ft2d, s, r_nb, t[:, None])
+            unit = dd(1.0, t_ft2d, s, r_nb, t[:, None])
             # The binding neighbour is the one with the least headroom per gpm, which is not necessarily
             # the one carrying the most drawdown.
             out["interference"] = _rate_cap(req.max_interference_ft,
                                             fixed_at(nb_x, nb_y, t[:, None]), unit).min(axis=1)
         if req.available_drawdown_ft is not None:
             out["available drawdown"] = _rate_cap(req.available_drawdown_ft, fixed_at(xs, ys, t),
-                                                  theis_drawdown(1.0, t_ft2d, s, r_w, t))
+                                                  dd(1.0, t_ft2d, s, r_w, t))
         return out, t
 
     # Iterate down from the spacing limit. Dropping the rate lengthens the run, which deepens the
@@ -287,19 +303,19 @@ def analyze_siting(project, request: SitingRequest | None = None) -> dict:
     unit_target = None
     fixed_nb_target = None
     if neighbours:
-        unit_target = theis_drawdown(1.0, t_ft2d, s, r_nb, t_days)
+        unit_target = dd(1.0, t_ft2d, s, r_nb, t_days)
         fixed_nb_target = fixed_at(nb_x, nb_y, t_days)
         total_at_target = fixed_nb_target[None, :] + target * unit_target
         worst_idx = total_at_target.argmax(axis=1)
         worst_ft = total_at_target.max(axis=1)
-    self_unit = float(theis_drawdown(1.0, t_ft2d, s, r_w, t_days))
+    self_unit = float(dd(1.0, t_ft2d, s, r_w, t_days))
     self_fixed = fixed_at(xs, ys, t_days)
 
     # What the location actually does at the rate it can support, over the duration that rate implies.
-    self_at_rate = fixed_at(xs, ys, t_at_rate) + max_rate * theis_drawdown(1.0, t_ft2d, s, r_w, t_at_rate)
+    self_at_rate = fixed_at(xs, ys, t_at_rate) + max_rate * dd(1.0, t_ft2d, s, r_w, t_at_rate)
     if neighbours:
         nb_at_rate = (fixed_at(nb_x, nb_y, t_at_rate[:, None])
-                      + max_rate[:, None] * theis_drawdown(1.0, t_ft2d, s, r_nb, t_at_rate[:, None]))
+                      + max_rate[:, None] * dd(1.0, t_ft2d, s, r_nb, t_at_rate[:, None]))
         max_nb_at_rate = nb_at_rate.max(axis=1)
     else:
         max_nb_at_rate = np.full(len(xs), np.nan)
@@ -393,6 +409,10 @@ def analyze_siting(project, request: SitingRequest | None = None) -> dict:
         f"Spacing headroom is only as good as the well database: it extends {data_extent_ft:,.0f} ft from the "
         "intake location. A rate this search allows at a point assumes no unrecorded well nearer than the "
         "nearest one in that file.")
+    notes.extend(f["text"] for f in sol_flags)
+    if sol.is_leaky:
+        notes.append(f"Drawdown was computed with the {sol.citation}, the same solution the report uses "
+                     f"(leakance {sol.leakance:g} per day, leakage factor {sol.b_ft:,.0f} ft).")
     if setback_ft > 0:
         notes.append(f"A {setback_ft:,.0f}-ft property-line setback was applied ({setback_basis}), so no "
                      "candidate sits closer than that to the tract line.")
@@ -423,6 +443,7 @@ def analyze_siting(project, request: SitingRequest | None = None) -> dict:
         "ft_per_gpm": mult, "required_spacing_ft": spacing_radius_at_target,
         "rule_reference": district.get("spacing", {}).get("rule_reference"),
         "rule_status": status, "provisional": not status["spacing_authoritative"],
+        "solution": sol.to_json(),
         "setback_ft": setback_ft, "setback_basis": setback_basis,
         "min_separation_ft": sep,
         "rate_iterations": iterations, "rate_converged": converged,

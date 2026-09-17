@@ -78,6 +78,60 @@ def scenario_groups(project) -> list[dict]:
     return groups
 
 
+def _solution_context(an: dict, geo: dict, join) -> dict:
+    """Which analytical solution the numbers came from, and what the narrative must say about it.
+
+    Every figure here is formatted into a string so the anti-fabrication lint sees it: the methodology
+    paragraph may state a leakance only because the leakance is in this block.
+    """
+    specs = an.get("solutions") or {}
+    leaky = {aq: s for aq, s in specs.items() if s.get("kind") == "hantush"}
+    per = []
+    for aq, s in sorted(specs.items()):
+        per.append({
+            "aquifer": aq, "citation": s.get("citation", ""), "kind": s.get("kind", "theis"),
+            # Plain-text scientific notation: a leakance is 1e-05 in code and "1.00 x 10^-5" in a
+            # document a person reads and a District files.
+            "leakance_text": (fmt_sci(s["leakance_per_day"]) if s.get("leakance_per_day") else None),
+            "b_text": (fmt_int(s["leakage_factor_ft"]) if s.get("leakage_factor_ft") else None),
+            "basis": s.get("basis"),
+            "fell_back": bool(s.get("fell_back")),
+        })
+    leaky_sentence = ""
+    if leaky:
+        parts = []
+        for p in per:
+            if p["kind"] != "hantush":
+                continue
+            parts.append(f"for the {p['aquifer']} a leakance of {p['leakance_text']} per day "
+                         f"({p['basis']}), giving a leakage factor B of {p['b_text']} ft")
+        leaky_sentence = ("The leakage properties applied were " + join(parts) + ". "
+                          "Because part of the withdrawal is supplied across the confining unit rather "
+                          "than from storage, drawdown approaches a steady cone instead of continuing to "
+                          "deepen with the logarithm of time.")
+    bounds = geo.get("hydraulic_boundaries") or []
+    bound_sentence = ""
+    if bounds:
+        described = join([f"a {b['kind']} boundary at {b['name']}"
+                          + (f" ({b['source']})" if b.get("source") else "") for b in bounds])
+        effect = ("A barrier boundary passes no water, so the cone deepens against it; a recharge "
+                  "boundary holds the head fixed, so drawdown there is zero.")
+        exact = ("This is the exact analytical solution for a single straight boundary."
+                 if len(bounds) == 1 else
+                 "With more than one boundary the image series is truncated, and the reviewer should "
+                 "confirm that the truncation is acceptable for this geometry.")
+        bound_sentence = (f"The analysis represents {described} by the method of images, in which an "
+                          f"image well reflected across the boundary reproduces its effect exactly. "
+                          f"{effect} {exact}")
+    return {
+        "is_leaky": bool(leaky), "per_aquifer": per,
+        "citations": join(sorted({p["citation"] for p in per if p["citation"]})),
+        "leaky_sentence": leaky_sentence,
+        "has_boundaries": bool(bounds), "boundary_sentence": bound_sentence,
+        "boundary_count_text": fmt_int(len(bounds)) if bounds else "0",
+    }
+
+
 def build_context(project, numbering=None) -> dict:
     intake, review, district = project.intake, project.review, project.district
     A = project.artifacts
@@ -384,13 +438,20 @@ def build_context(project, numbering=None) -> dict:
         ih += [(f"{wn(s['focus_well'])} pumping, {s['duration_label']} (ft)" if g["kind"] == "single_well_subcase" else f"Drawdown, {s['duration_label']} (ft)") for s in scs]
         ir = []
         note_flag = False
+        beyond_flag = ""
         for imp in scs[0]["results_by_aquifer"][aq]["nearby_impacts"]:
             row = [imp["map_id"], imp["registration_no"] or "N/A", imp["permit_no"], imp["owner"],
                    fmt_int(imp["total_depth_ft"]) if imp["total_depth_ft"] is not None else "N/A", imp["screen_intervals"] or "N/A",
                    (imp["aquifer"] or "N/A") + ("*" if imp["aquifer_inferred"] else ""), imp["status"], fmt_int(imp["distance_ft"])]
             for s in scs:
                 j = next(z for z in s["results_by_aquifer"][aq]["nearby_impacts"] if z["map_id"] == imp["map_id"])
-                if j["drawdown_ft"] is None:
+                # Two different reasons produce a blank cell, and a reader has to be able to tell them
+                # apart: a well in another aquifer, and a well outside the aquifer this solution
+                # represents at all because it lies beyond a hydraulic boundary.
+                if j.get("beyond_boundary"):
+                    row.append("beyond boundary ‡")
+                    beyond_flag = _join(j["beyond_boundary"])
+                elif j["drawdown_ft"] is None:
                     row.append("N/A")
                 else:
                     row.append(fmt_ft(j["drawdown_ft"]) + ("" if j["applicability"] == "same" else " †"))
@@ -398,8 +459,15 @@ def build_context(project, numbering=None) -> dict:
                         note_flag = True
             ir.append(row)
         gc["impacts_header"], gc["impacts_rows"] = ih, ir
-        gc["impacts_note"] = ("Drawdown estimates apply to wells completed in the " + aq + " Aquifer. † Well completed in a different or unknown aquifer; value shown for completeness only and not applicable. * Aquifer inferred from completion depth." if note_flag
-                              else "Drawdown estimates apply to wells completed in the " + aq + " Aquifer. * Aquifer inferred from completion depth.")
+        base = "Drawdown estimates apply to wells completed in the " + aq + " Aquifer. "
+        if note_flag:
+            base += ("† Well completed in a different or unknown aquifer; value shown for completeness "
+                     "only and not applicable. ")
+        if beyond_flag:
+            base += (f"‡ Well lies beyond the {beyond_flag}, outside the area this solution represents; "
+                     "drawdown there is governed by conditions on the far side of the boundary and is "
+                     "not estimated. ")
+        gc["impacts_note"] = base + "* Aquifer inferred from completion depth."
         gc["aquifer"] = aq
         gc["max_impact"] = None
         same_imps = [(j["drawdown_ft"], j) for s in scs for j in s["results_by_aquifer"][aq]["nearby_impacts"] if j["applicability"] == "same" and j["drawdown_ft"] is not None and not j["is_system_well"]]
@@ -417,17 +485,27 @@ def build_context(project, numbering=None) -> dict:
         aq = list(mat.keys())[0]
         m = mat[aq]
         ids = m["well_ids"]
-        header = ["Drawdown at (rows) caused by (columns)"] + [wn(i) for i in ids] + ["Total (ft)"]
+        # With a boundary in effect the image wells contribute drawdown that has no column of its own.
+        # It gets one, so the Total column is the sum of the columns printed beside it.
+        bnd = m.get("has_boundary_effect")
+        bnd_label = _join(m.get("boundary_labels") or []) or "hydraulic boundary"
+        header = (["Drawdown at (rows) caused by (columns)"] + [wn(i) for i in ids]
+                  + ([f"{bnd_label} (ft)"] if bnd else []) + ["Total (ft)"])
         rows = []
         pairs = []
         for i in ids:
             r = m["rows"][i]
-            rows.append([f"{wn(i)}"] + [fmt_ft(r[j]) for j in ids] + [fmt_ft(r["_total"])])
+            rows.append([f"{wn(i)}"] + [fmt_ft(r[j]) for j in ids]
+                        + ([fmt_ft(r["_boundary"])] if bnd else []) + [fmt_ft(r["_total"])])
             for j in ids:
                 if j != i:
                     pairs.append(f"{wn(j)} contributes {fmt_ft(r[j])} ft of the {fmt_ft(r['_total'])} ft of drawdown at {wn(i)} ({fmt_int(m['distances'][i][j])} ft apart)")
         si_ctx = {"header": header, "rows": rows, "duration_label": sc_title,
-                  "sentence": f"For the {sc_title} maximum-production case, " + _join(pairs) + "."}
+                  "has_boundary_effect": bool(bnd), "boundary_label": bnd_label,
+                  "sentence": f"For the {sc_title} maximum-production case, " + _join(pairs) + "."
+                              + (f" A further column reports the drawdown contributed by the image "
+                                 f"wells representing the {bnd_label}, which is part of each total but "
+                                 "is not caused by another system well." if bnd else "")}
 
     # pumping levels
     pl_ctx = []
@@ -484,6 +562,7 @@ def build_context(project, numbering=None) -> dict:
         "parameters": {"rows": param_rows, "header": ["Well", "Aquifer", "Transmissivity (ft2/day)", "Hydraulic conductivity (ft/day)", "Storativity", "Aquifer thickness (ft)", "Source"]},
         "wq": wq_ctx,
         "scen": {"r_w_text": _join(all_r_w), "threshold_text": _join(thresholds), "duration_sentence": " ".join(dur_sentences)},
+        "sol": _solution_context(an, geo, _join),
         "groups": groups_ctx, "si": si_ctx, "pl": pl_ctx, "summary": summary,
         "opinions": review.opinions.model_dump(), "reviewer": review.reviewer.model_dump(),
         "fignum": fignum, "tabnum": tabnum, "figures": figs,
