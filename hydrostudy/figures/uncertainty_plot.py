@@ -122,4 +122,4 @@ def render(project, unc: dict, samples, path):
                        f"states; where it sits away from the median, the intake's parameter is one end of "
                        f"the declared spread rather than its centre. This propagates the declared "
                        f"parameter spreads only, and says nothing about whether the "
-                       f"{unc['solution']['citation'].split('(')[0].strip()} assumptions hold"}
+                       f"{unc['solution']['citation'].split('(')[0].strip()} assumptions hold."}

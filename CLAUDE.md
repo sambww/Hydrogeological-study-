@@ -75,7 +75,19 @@ Use the `/hydro-report` skill (`.claude/skills/hydro-report/SKILL.md`) to walk a
   reproducible; (3) every quantile is reported with its standard error; (4) it reports where the
   deterministic value falls as a percentile, so nobody mistakes the median for a correction to a sealed
   number. `theis_drawdown` and `leaky_drawdown` accept ARRAYS for T and S so all draws evaluate in one
-  call - keep those guards array-aware (`np.any`). See `docs/RUNBOOK.md` section L.
+  call - keep those guards array-aware (`np.any`).
+  The command does not touch the report. The REPORT path is separate and opt-in:
+  `analysis.uncertainty_appendix` in the intake makes `pipeline.run_uncertainty` propagate during the
+  build and both assemblers add Appendix D (`report/assemble.py::append_uncertainty_appendix`, shared
+  so the two formats cannot drift). Rules there: (1) no declared spread, or a post-drilling report with
+  no interference section, means NO appendix plus a review flag - never a guessed spread and never a
+  silently missing section the operator asked for; (2) appendix figures and tables are lettered (D-1,
+  D-2) and the figure is deliberately absent from `context.assign_numbers`' order, so adding the
+  appendix renumbers nothing in a report already reviewed without it; (3) the section the appendix
+  qualifies comes from `context.INTERFERENCE_SECTION`, never typed into the template, because the
+  pre- and post-drilling formats number it 6 and 5; (4) a probability is NEVER printed as 100% or 0%
+  (`context._uncertainty_context::probability`) - no finite simulation establishes a certainty, and in
+  a filed document that is a claim the method cannot support. See `docs/RUNBOOK.md` section L.
 - Never overwrite a final report: bump `report.revision.number`.
 - Everything under `projects/<slug>` except `build/` is tracked on purpose: the intake is the record of what
   went into a sealed report. It therefore carries customer names, addresses, well coordinates and water-quality

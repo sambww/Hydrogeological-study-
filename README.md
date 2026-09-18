@@ -37,8 +37,9 @@ the placement is a search, so the answer is a good field rather than a proven op
 
 `uncertainty` answers the question a reviewer asks next: how sure is that number? Declare how well T and
 S are known, with a source, and it propagates the spread into every drawdown the report quotes, reporting
-the probability that drawdown at a given well exceeds a given figure. It will not run on a guessed spread
-(`docs/RUNBOOK.md` section L).
+the probability that drawdown at a given well exceeds a given figure. It will not run on a guessed spread.
+Opt in with `analysis.uncertainty_appendix` and the spread is propagated during the build and filed as
+Appendix D of the report itself (`docs/RUNBOOK.md` section L).
 
 Beyond Theis, two solutions are available and both default to off: the Hantush-Jacob leaky-aquifer
 solution for a confining unit that passes water, and barrier or recharge boundaries by the method of

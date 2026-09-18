@@ -601,7 +601,45 @@ leaks, or whether the pumping schedule is what was modelled. **A narrow interval
 that the answer is right** - only that it is insensitive to the two numbers you put a spread on. The
 output repeats that every run.
 
-It is also a decision-support tool, like `siting` and `wellfield`: it writes `build/uncertainty.json` and
-`build/figures/fig_uncertainty.png` and does **not** touch the report. Putting an uncertainty table into
-the sealed document is a choice for the sealing professional, and wiring it into the narrative is the next
-piece of work, not something this command does behind anyone's back.
+The `uncertainty` command itself is a decision-support tool, like `siting` and `wellfield`: it writes
+`build/uncertainty.json` and `build/figures/fig_uncertainty.png` and does **not** touch the report. Run it
+freely while you are still arguing about parameters. What goes into the sealed document is a separate,
+deliberate decision, below.
+
+### Putting it in the report: Appendix D
+
+The District's guidelines contemplate a deterministic analysis, so the interval is supporting material you
+choose to file, not a default section. Ask for it in the intake:
+
+```yaml
+analysis:
+  uncertainty_appendix:
+    draws: 10000
+    seed: 20260917            # do not change this between revisions of the same report
+    quantiles: [0.1, 0.5, 0.9]
+    thresholds_ft: [25.0, 50.0]   # the figures the objection was actually about
+    # aquifer, scenario_key: optional; default is the whole system at maximum production
+```
+
+`hydrostudy run` then propagates the spread as part of the build and adds **Appendix D. Parameter
+uncertainty**: the prose, Table D-1 (the parameters as declared, with their sources), Table D-2 (every
+receptor's interval, the value the body of the report states, and the percentile it sits at) and Figure
+D-1. The draft-only review log moves from Appendix D to E. Appendix figures and tables are lettered rather
+than numbered so that adding the appendix does not renumber a single figure in a report already reviewed
+without it.
+
+Four things that block or change it, on purpose:
+
+- **No declared spread, no appendix.** Asking for the appendix is not permission to invent a distribution.
+  The build drops the section, raises `UNCERTAINTY_APPENDIX_UNAVAILABLE` at review level and tells you
+  what to declare. The report still builds.
+- **Post-drilling reports without the re-run get no appendix** either: there is no interference section for
+  it to qualify. Set `as_built.rerun_interference` if you want it.
+- **The seed is in the intake**, not on a command line, because a sealed report has to be re-derivable from
+  its own inputs. Changing it silently changes an interval a reviewer already signed.
+- **Probabilities are never printed as certainties.** 9,997 of 10,000 draws reads as `>99%`, not `100%`: no
+  finite simulation establishes a 100% probability, and in a document a District files that is a claim the
+  method cannot support rather than a rounding convention.
+
+Present it the way the appendix does: lead with the exceedance probability at the well that matters, and
+state where the report's own figure falls as a percentile, so nobody reads the median as a correction.

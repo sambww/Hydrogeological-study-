@@ -333,6 +333,9 @@ def _print_uncertainty(out, quantiles, json_path):
     print(f"\nWrote {json_path}")
     if out.get("figure"):
         print(f"Figure: {out['figure']['path']}")
+    print("\nThis command does not touch the report. To file this analysis with it, add "
+          "analysis.uncertainty_appendix\nto the intake and re-run `hydrostudy run`; see docs/RUNBOOK.md "
+          "section L.")
 
 
 def cmd_validate(args):
