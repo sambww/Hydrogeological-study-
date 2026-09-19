@@ -53,6 +53,11 @@ that those two bracket a range the reviewer may adopt or widen, and leave the ch
 presenting the result, lead with the exceedance probability at the well that matters, and state where the
 report's current value falls as a percentile so nobody reads the median as a correction.
 
+To file it with the report rather than just answer the question, add `analysis.uncertainty_appendix` to
+the intake (draws, seed, quantiles and the `thresholds_ft` that matter) and re-run. The build adds
+Appendix D and moves the draft review log to Appendix E. Do not add that block hoping the spread will
+follow: without a declared distribution the appendix is dropped and the build flags it.
+
 ## Post-drilling submittal
 When the well has been drilled and tested, copy the project, set `mode: lsgcd_post_drilling`, and fill the `as_built:`
 block (as-built construction, static level and date, pump, log inventory with LAS files, aquifer-test CSVs, field

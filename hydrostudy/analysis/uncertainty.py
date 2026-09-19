@@ -371,6 +371,13 @@ def quantile_keys(quantiles) -> tuple[str, str, str]:
     return f"{qs[0]:g}", f"{mid:g}", f"{qs[-1]:g}"
 
 
+def _ordinal(fraction: float) -> str:
+    """A fraction as an ordinal percentile: 0.74 -> "74th". "74% percentile" is not English."""
+    n = round(fraction * 100)
+    suffix = "th" if 10 <= n % 100 <= 20 else {1: "st", 2: "nd", 3: "rd"}.get(n % 10, "th")
+    return f"{n}{suffix}"
+
+
 def _general_notes(req, results, det):
     yield (f"{req.draws:,} draws with seed {req.seed}. Both are recorded so this interval can be "
            "reproduced exactly; a confidence interval nobody can re-derive is not evidence.")
@@ -382,7 +389,7 @@ def _general_notes(req, results, det):
     if off_centre and len(off_centre) == len(results):
         pct = sum(r["deterministic_percentile"] for r in off_centre) / len(off_centre)
         where = "above" if pct > 0.5 else "below"
-        yield (f"The drawdown the report currently states sits around the {pct:.0%} percentile of this "
+        yield (f"The drawdown the report currently states sits around the {_ordinal(pct)} percentile of this "
                f"distribution, {where} its middle, at every receptor. That is what happens when the "
                "intake's parameter is one end of the declared spread rather than its centre - which may "
                "be a deliberately conservative choice, but it means the median here is not the reported "

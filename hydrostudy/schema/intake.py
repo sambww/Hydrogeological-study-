@@ -351,6 +351,44 @@ class BoundarySpec(BaseModel):
         return lon
 
 
+class UncertaintyAppendix(BaseModel):
+    """Opt in to the parameter-uncertainty appendix, and set how it is run.
+
+    The presence of this block is the opt-in: the District's guidelines contemplate a deterministic
+    analysis, so the interval is supporting material an applicant chooses to file, not a default
+    section. It still needs a declared spread on the aquifer (`Aquifer.uncertainty`); asking for the
+    appendix does not authorise inventing one, so without it the appendix is omitted and the build
+    flags why.
+    """
+
+    draws: int = Field(default=10_000, ge=100)
+    #: Recorded in the appendix. A sealed report has to be re-derivable, so this must not drift between
+    #: revisions of the same report unless the revision says so.
+    seed: int = 20260917
+    quantiles: list[float] = [0.10, 0.50, 0.90]
+    #: Drawdown figures to report an exceedance probability against. Usually the available drawdown at a
+    #: neighbour's pump, or whatever figure the objection in the hearing was about.
+    thresholds_ft: list[float] = []
+    aquifer: AquiferName | None = None
+    scenario_key: str | None = None
+
+    @field_validator("quantiles")
+    @classmethod
+    def _fractions(cls, v):
+        if not v:
+            raise ValueError("give at least one quantile, e.g. [0.1, 0.5, 0.9]")
+        if not all(0 < q < 1 for q in v):
+            raise ValueError(f"quantiles must be strictly between 0 and 1, got {v}")
+        return sorted(v)
+
+    @field_validator("thresholds_ft")
+    @classmethod
+    def _positive(cls, v):
+        if any(t <= 0 for t in v):
+            raise ValueError(f"an exceedance threshold must be a positive drawdown in feet, got {v}")
+        return v
+
+
 class AnalysisConfig(BaseModel):
     # 'theis' assumes no leakage and no boundaries, which is the District's default expectation and the
     # conservative case. 'hantush' requires a cited leakance on the aquifer's confinement block; without
@@ -366,6 +404,9 @@ class AnalysisConfig(BaseModel):
     scenarios: ScenarioConfig = ScenarioConfig()
     other_aquifer_wells: Literal["compute_and_flag", "na"] = "compute_and_flag"
     well_efficiency: float | None = Field(default=None, gt=0, le=1)
+    #: Null (the default) means no uncertainty appendix and no Monte Carlo run on the report path, so
+    #: every existing report is byte-for-byte unchanged.
+    uncertainty_appendix: UncertaintyAppendix | None = None
 
 
 class DataFiles(BaseModel):

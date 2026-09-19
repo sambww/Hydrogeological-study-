@@ -1,0 +1,25 @@
+The drawdown figures in {{ unc.section_ref }} of this report were computed from one transmissivity and one
+storativity for the {{ unc.aquifer }} Aquifer. Those two parameters are the least precisely known inputs
+to the analysis, and the results are proportional to the first and sensitive to the second. This appendix
+carries the uncertainty in them through the same analytical solution, so that the results in {{ unc.section_ref }} can
+be read as a range rather than as single values.
+
+{{ unc.declared_sentence }} {{ unc.param_table_label }} states them as they were declared, alongside the
+single value adopted for the analysis in {{ unc.section_ref }}. No spread has been assumed or estimated here: a
+parameter for which no distribution was declared is held at the value used in the report, and
+{{ unc.param_table_label }} says so.
+
+The declared distributions were sampled {{ unc.draws }} times, and the {{ unc.citation }} was solved at
+every draw for the {{ unc.case_sentence }}. The seed of the random number generator was {{ unc.seed }};
+it is stated so that the interval reported here can be reproduced exactly from the same inputs.
+
+{{ unc.receptor_table_label }} reports, at each pumped well and each registered well in the analysis, the
+{{ unc.low_pct }}, {{ unc.mid_pct }} and {{ unc.high_pct }} drawdown across those draws, together with the
+value stated in {{ unc.section_ref }} and the percentile of the distribution at which that value falls.
+{{ unc.figure_label }} shows the same result graphically. {{ unc.exceed_sentence }}
+
+The following qualifications apply to this appendix.
+
+{% for note in unc.notes %}
+- {{ note }}
+{% endfor %}

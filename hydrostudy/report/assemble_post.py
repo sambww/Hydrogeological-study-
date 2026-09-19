@@ -6,7 +6,13 @@ from pathlib import Path
 
 from hydrostudy.districts.status import spacing_basis_sentence
 from hydrostudy.reference import load_reference
-from hydrostudy.report.assemble import LintError, _env, _letterhead, _template
+from hydrostudy.report.assemble import (
+    LintError,
+    _env,
+    _letterhead,
+    _template,
+    append_uncertainty_appendix,
+)
 from hydrostudy.report.context import scenario_groups
 from hydrostudy.report.context_post import build_post_context
 from hydrostudy.report.docx_builder import PLACEHOLDER_RE, DocBuilder
@@ -22,6 +28,8 @@ def build_post_report(project, pdf: bool = True, strict_lint: bool = True) -> di
     sections = {}
     for name in ("post_intro", "post_construction", "post_logs", "post_testing", "post_wq", "post_summary"):
         sections[name] = env.from_string(_template(f"{name}.j2")).render(**ctx)
+    if ctx["unc"]:
+        sections["uncertainty"] = env.from_string(_template("uncertainty.j2")).render(**ctx)
     if ctx["ab"]["rerun"]:
         sections["post_interference"] = env.from_string(_template("post_interference.j2")).render(**ctx)
         sections["method"] = env.from_string(_template("method.j2")).render(**ctx)
@@ -158,9 +166,11 @@ def build_post_report(project, pdf: bool = True, strict_lint: bool = True) -> di
     doc.heading("Appendix C. Aquifer-test data", 1)
     for i, dt in enumerate(ab["data_tables"], 1):
         doc.table(f"C-{i}", f"Recorded water levels, test {dt['id']}", ["Elapsed time (min)", "Drawdown (ft)", "Rate (gpm)", "Phase"], dt["rows"], font_pt=7.5, col_widths_in=[1.4, 1.2, 1.0, 1.0])
+    if ctx["unc"]:
+        append_uncertainty_appendix(doc, ctx, sections["uncertainty"], figs)
     placeholders = [(n, m) for n, text in sections.items() for m in PLACEHOLDER_RE.findall(text)]
     if review.reviewer.status != "final":
-        doc.heading("Appendix D. Review log (draft only; removed from the final report)", 1)
+        doc.heading(f"Appendix {'E' if ctx['unc'] else 'D'}. Review log (draft only; removed from the final report)", 1)
         for sec_name, ph in placeholders:
             doc.bullet(f"{sec_name}: {ph}")
         for f in A["flags"]:

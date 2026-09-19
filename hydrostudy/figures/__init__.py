@@ -15,6 +15,20 @@ from hydrostudy.figures import (
 )
 
 
+def _uncertainty(project, figs: dict, out_dir):
+    """The appendix figure, when the intake opted into the uncertainty appendix.
+
+    Deliberately absent from `report.context.assign_numbers`' order: it is labelled D-1 alongside the
+    appendix tables rather than taking a number in the body's figure sequence.
+    """
+    a = project.artifacts
+    if not a.get("uncertainty"):
+        return
+    from hydrostudy.figures import uncertainty_plot
+    figs["uncertainty"] = uncertainty_plot.render(project, a["uncertainty"], a["_uncertainty_samples"],
+                                                 out_dir / "fig_uncertainty.png")
+
+
 def render_all(project) -> dict:
     out_dir = project.build_dir / "figures"
     out_dir.mkdir(parents=True, exist_ok=True)
@@ -41,6 +55,7 @@ def render_all(project) -> dict:
             r = drawdown_map.render(project, sc, aq, out_dir / f"fig_dd_{sc['key']}_{aq}.png")
             figs[f"dd_{sc['key']}_{aq}"] = r
     figs["distance_drawdown"] = distance_drawdown.render(project, out_dir / "fig_distance_drawdown.png")
+    _uncertainty(project, figs, out_dir)
     return {k: v for k, v in figs.items() if v}
 
 
@@ -80,4 +95,5 @@ def render_all_post(project) -> dict:
             for aq in sc["results_by_aquifer"]:
                 figs[f"dd_{sc['key']}_{aq}"] = drawdown_map.render(project, sc, aq, out_dir / f"fig_dd_{sc['key']}_{aq}.png")
         figs["distance_drawdown"] = distance_drawdown.render(project, out_dir / "fig_distance_drawdown.png")
+    _uncertainty(project, figs, out_dir)
     return {k: v for k, v in figs.items() if v}

@@ -64,6 +64,8 @@ def build_report(project, pdf: bool = True, strict_lint: bool = True) -> dict:
              "site": "site.j2", "water_quality": "water_quality.j2", "method": "method.j2", "method_after": "method_after.j2",
              "system_interference": "system_interference.j2", "pumping_level": "pumping_level.j2",
              "summary": "summary_feasibility.j2" if feas else "summary.j2"}
+    if ctx["unc"]:
+        names["uncertainty"] = "uncertainty.j2"
     for name, fname in names.items():
         if name == "system_interference" and not ctx["si"]:
             continue
@@ -239,11 +241,13 @@ def build_report(project, pdf: bool = True, strict_lint: bool = True) -> dict:
         calc = float(theis_drawdown(BENCHMARK["q_gpm"], BENCHMARK["t_ft2d"], BENCHMARK["s"], r_ft, t_days))
         rows.append([f"{r_ft:g}", f"{t_days:g}", fmt_ft(reported), fmt_ft(calc), fmt_ft(calc - reported)])
     doc.table("C-1", "Benchmark comparison", ["Distance (ft)", "Time (days)", "Reported drawdown (ft)", "Computed drawdown (ft)", "Difference (ft)"], rows, font_pt=8)
+    if ctx["unc"]:
+        append_uncertainty_appendix(doc, ctx, sections["uncertainty"], figs)
     placeholders = []
     for name, text in sections.items():
         placeholders += [(name, m) for m in PLACEHOLDER_RE.findall(text)]
     if review.reviewer.status != "final":
-        doc.heading("Appendix D. Review log (draft only; removed from the final report)", 1)
+        doc.heading(f"Appendix {'E' if ctx['unc'] else 'D'}. Review log (draft only; removed from the final report)", 1)
         doc.para("Items requiring the sealing professional's input, and automated flags:", size=9)
         for sec, ph in placeholders:
             doc.bullet(f"{sec}: {ph}")
@@ -259,6 +263,30 @@ def build_report(project, pdf: bool = True, strict_lint: bool = True) -> dict:
     return {"docx": str(out_docx), "pdf": str(out_pdf) if out_pdf else None, "placeholders": placeholders,
             "lint": lint, "allowed_numbers": allowed_numbers, "figures": len(fn), "tables": len(tn),
             "sections": list(sections.keys())}
+
+
+def append_uncertainty_appendix(doc, ctx, narrative: str, figs: dict):
+    """Appendix D, shared by the pre- and post-drilling reports so the two cannot drift apart.
+
+    The appendix is labelled D-n rather than taking numbers in the body's sequence: it is supporting
+    material the applicant opted into, and inserting it into the figure numbering would renumber every
+    figure in a report that had been reviewed without it.
+    """
+    u = ctx["unc"]
+    doc.page_break()
+    doc.heading("Appendix D. Parameter uncertainty", 1)
+    doc.paragraphs(narrative)
+    doc.table("D-1", f"Aquifer parameters as declared for the {u['aquifer']} Aquifer",
+              u["param_header"], u["param_rows"], font_pt=8,
+              note="Blank cells indicate a parameter held at the value adopted in the report rather than sampled.")
+    doc.landscape()
+    doc.table("D-2", f"Drawdown as a distribution: {u['scenario_title']}",
+              u["receptor_header"], u["receptor_rows"], font_pt=7,
+              note=f"ft = feet. The percentile column states where the drawdown reported in "
+                   f"{u['section_ref']} falls in this distribution; it is not a correction to that value.")
+    doc.portrait()
+    if "uncertainty" in figs:
+        doc.figure("D-1", figs["uncertainty"]["caption"], figs["uncertainty"]["path"], 6.5)
 
 
 def g_scenarios(project, gkey):

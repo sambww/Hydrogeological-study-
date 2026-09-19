@@ -232,6 +232,7 @@ class Project:
                           "_hydro_geoms": hydro_geoms}
         if as_built:
             self.artifacts["as_built"] = as_built
+        self.run_uncertainty()
         self.artifacts["gam"] = gam
         for k, v in self.artifacts.items():
             if k.startswith("_"):
@@ -240,6 +241,50 @@ class Project:
                 v = {kk: vv for kk, vv in v.items() if kk != "limits"} | {"limits": v["limits"]}
             dump_json(v, self.build_dir / f"{k}.json")
         return self.artifacts
+
+    def run_uncertainty(self):
+        """Propagate the declared parameter spreads, when the intake opts into the appendix.
+
+        Off by default, so nothing here runs for an ordinary report. Asking for the appendix is not
+        permission to invent a spread: if none is declared the appendix is dropped and a review flag
+        says what to supply, rather than the report quietly going out without the section the operator
+        asked for.
+        """
+        cfg = self.intake.analysis.uncertainty_appendix
+        if cfg is None:
+            return None
+        as_built = self.artifacts.get("as_built")
+        if as_built is not None and not as_built["rerun_interference"]:
+            # The appendix qualifies the interference section, and a post-drilling report that does not
+            # re-run the simulation has none. An appendix pointing at a section the document does not
+            # contain is worse than no appendix.
+            self.artifacts["flags"].append({
+                "level": "review", "code": "UNCERTAINTY_APPENDIX_UNAVAILABLE",
+                "text": "the intake requests a parameter-uncertainty appendix, but this post-drilling report "
+                        "does not re-run the interference analysis, so there is no section for the appendix "
+                        "to qualify. Set as_built.rerun_interference to include it. The appendix is omitted "
+                        "from this report."})
+            return None
+        from hydrostudy.analysis.uncertainty import (
+            UncertaintyNotPossible,
+            UncertaintyRequest,
+            propagate,
+        )
+        req = UncertaintyRequest(draws=cfg.draws, seed=cfg.seed, quantiles=tuple(cfg.quantiles),
+                                 thresholds_ft=tuple(cfg.thresholds_ft), aquifer=cfg.aquifer,
+                                 scenario_key=cfg.scenario_key)
+        try:
+            out = propagate(self, req)
+        except UncertaintyNotPossible as e:
+            self.artifacts["flags"].append({
+                "level": "review", "code": "UNCERTAINTY_APPENDIX_UNAVAILABLE",
+                "text": f"the intake requests a parameter-uncertainty appendix, but it cannot be produced: {e} "
+                        "The appendix is omitted from this report."})
+            return None
+        # Tens of thousands of floats per receptor: they feed the figure, never the JSON artifact.
+        self.artifacts["_uncertainty_samples"] = out.pop("_samples")
+        self.artifacts["uncertainty"] = out
+        return out
 
     def run_figures(self):
         from hydrostudy.figures import render_all, render_all_post

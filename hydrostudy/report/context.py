@@ -9,6 +9,11 @@ from hydrostudy.units import GPM_TO_CFD, fmt_ft, fmt_gal, fmt_int, fmt_miles, fm
 
 MONTHS = ["January", "February", "March", "April", "May", "June", "July", "August", "September", "October", "November", "December"]
 
+#: Which numbered section carries the interference analysis, per report format. The uncertainty appendix
+#: qualifies that section by name, and the two formats do not number it the same.
+INTERFERENCE_SECTION = {"lsgcd_pre_drilling": "Section 6", "feasibility": "Section 6",
+                        "lsgcd_post_drilling": "Section 5"}
+
 
 def long_date(iso: str) -> str:
     try:
@@ -129,6 +134,101 @@ def _solution_context(an: dict, geo: dict, join) -> dict:
         "leaky_sentence": leaky_sentence,
         "has_boundaries": bool(bounds), "boundary_sentence": bound_sentence,
         "boundary_count_text": fmt_int(len(bounds)) if bounds else "0",
+    }
+
+
+def _uncertainty_context(unc: dict, join, section_ref: str = "Section 6") -> dict:
+    """Appendix D: the declared spreads, and what they do to every drawdown the report states.
+
+    Every figure here is formatted from the propagated result, never recomputed, so the appendix cannot
+    disagree with `build/uncertainty.json`. The appendix carries its own D-n labels because it sits
+    outside the body's figure and table sequence.
+
+    `section_ref` is the interference section the appendix qualifies, and it is a parameter because the
+    two report formats number it differently: 6 in the pre-drilling report, 5 in the post-drilling one.
+    An appendix pointing at the wrong section is the kind of error that costs a reviewer's confidence in
+    everything around it.
+    """
+    from hydrostudy.analysis.uncertainty import quantile_keys
+    lo_k, mid_k, hi_k = quantile_keys(unc["quantiles"])
+
+    def pct(k):
+        return f"p{float(k) * 100:g}"
+
+    def probability(f: float) -> str:
+        """A probability as a reader should see it, never rounded to certainty.
+
+        `f"{0.9997:.0%}"` is "100%", and a 100% probability is something no finite simulation can
+        establish. In a document a District files that is not a rounding convention, it is a claim the
+        method cannot support, so the extremes are reported as bounds instead.
+        """
+        if f >= 0.995:
+            return ">99%"
+        if 0 < f < 0.005:
+            return "<1%"
+        return f"{f:.0%}"
+
+    par = unc["parameters"]
+    param_rows, declared = [], []
+    for key, label, fmt in (("t_ft2d", "Transmissivity (ft2/day)", fmt_int),
+                            ("s", "Storativity", fmt_sci)):
+        d = par[key]
+        if d["declared"]:
+            param_rows.append([label, d["kind"], fmt(d["declared_p10"]), fmt(d["declared_median"]),
+                               fmt(d["declared_p90"]), fmt(d["intake_value"]), d["source"]])
+            # p10 and p90 of the declaration itself, which is what `_param_summary` reports whatever
+            # quantiles were asked of the drawdown - the two are separate and must not be conflated.
+            declared.append(f"{label.split(' (')[0].lower()} as a {d['kind']} distribution with a p10 of "
+                            f"{fmt(d['declared_p10'])} and a p90 of {fmt(d['declared_p90'])}, from "
+                            f"{d['source']}")
+        else:
+            param_rows.append([label, "held at the intake value", "", fmt(d["intake_value"]), "",
+                               fmt(d["intake_value"]), "no spread declared"])
+
+    rec_header = (["Receptor", "Reported in this report (ft)", "Percentile of the reported value"]
+                  + [f"{pct(k)} drawdown (ft)" for k in (lo_k, mid_k, hi_k)]
+                  + ["Standard error of the " + pct(hi_k) + " (ft)"]
+                  + [f"P(drawdown > {fmt_ft(t, 0)} ft)" for t in unc["thresholds_ft"]])
+    rec_rows = []
+    for r in unc["receptors"]:
+        q = r["quantiles"]
+        row = [r["label"],
+               fmt_ft(r["deterministic_ft"]) if r["deterministic_ft"] is not None else "N/A",
+               probability(r["deterministic_percentile"]) if r["deterministic_percentile"] is not None else "N/A",
+               fmt_ft(q[lo_k]["ft"]), fmt_ft(q[mid_k]["ft"]), fmt_ft(q[hi_k]["ft"]),
+               fmt_ft(q[hi_k]["standard_error_ft"], 2)]
+        row += [probability(r["exceedance"][f"{t:g}"]) for t in unc["thresholds_ft"]]
+        rec_rows.append(row)
+
+    # The most exposed registered well is named in the propagated notes already, and those notes are
+    # rendered in full below, so a sentence about it here would repeat one of them word for word.
+    worst = max((r for r in unc["receptors"] if r["kind"] == "registered"),
+                key=lambda r: r["quantiles"][hi_k]["ft"], default=None)
+    exceed_sentence = ""
+    if worst and unc["thresholds_ft"]:
+        parts = [f"{probability(worst['exceedance'][f'{t:g}'])} of exceeding {fmt_ft(t, 0)} ft"
+                 for t in unc["thresholds_ft"]]
+        exceed_sentence = (f"Against the drawdown figures the District asked about, the simulation puts "
+                           f"the probability at {worst['label']} at " + join(parts) + ".")
+    return {
+        "aquifer": unc["aquifer"], "scenario_title": unc["scenario_title"],
+        "duration_label": unc["duration_label"], "rate": fmt_int(unc["total_rate_gpm"]),
+        # The scenario title already names the duration, so the sentence states the rate and the
+        # duration once between them rather than repeating the figure.
+        "case_sentence": (f"{unc['scenario_title'][0].lower() + unc['scenario_title'][1:]} case, "
+                          f"a total of {fmt_int(unc['total_rate_gpm'])} gpm"),
+        "draws": fmt_int(unc["draws"]), "seed": f"{unc['seed']:d}",
+        "citation": unc["solution"]["citation"],
+        "declared_sentence": ("The spreads carried through this appendix are " + join(declared) + ".")
+                             if declared else "",
+        "low_pct": pct(lo_k), "mid_pct": pct(mid_k), "high_pct": pct(hi_k),
+        "exceed_sentence": exceed_sentence, "section_ref": section_ref,
+        "notes": unc["notes"],
+        "param_header": ["Parameter", "Distribution", "p10 as declared", "Median as declared",
+                         "p90 as declared", "Value used in the report", "Source"],
+        "param_rows": param_rows,
+        "receptor_header": rec_header, "receptor_rows": rec_rows,
+        "figure_label": "Figure D-1", "param_table_label": "Table D-1", "receptor_table_label": "Table D-2",
     }
 
 
@@ -563,6 +663,9 @@ def build_context(project, numbering=None) -> dict:
         "wq": wq_ctx,
         "scen": {"r_w_text": _join(all_r_w), "threshold_text": _join(thresholds), "duration_sentence": " ".join(dur_sentences)},
         "sol": _solution_context(an, geo, _join),
+        # None unless the intake opted in, which is what keeps the appendix out of every other report.
+        "unc": (_uncertainty_context(A["uncertainty"], _join, INTERFERENCE_SECTION[intake.mode])
+                if A.get("uncertainty") else None),
         "groups": groups_ctx, "si": si_ctx, "pl": pl_ctx, "summary": summary,
         "opinions": review.opinions.model_dump(), "reviewer": review.reviewer.model_dump(),
         "fignum": fignum, "tabnum": tabnum, "figures": figs,
